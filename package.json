@@ -1,0 +1,12 @@
+{
+  "name": "zaloclone_be",
+  "version": "1.0.0",
+  "description": "nhattungdev",
+  "main": "src/server.js",
+  "author": "nhattungdev",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
