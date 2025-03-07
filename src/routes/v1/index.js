@@ -1,6 +1,6 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { userRoutes } from '~/routes/v1/userRoutes'
+import { userRoutes } from '~/routes/v1/userRoute'
 const Router = express.Router()
 
 Router.get('/status', (req, res) => {
