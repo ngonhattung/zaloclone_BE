@@ -1,14 +1,14 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
+import { userValidation } from '~/validations/userValidation.js'
+
 const Router = express.Router()
 
 Router.route('/')
   .get((req, res) => {
     res.status(StatusCodes.OK).json({ message: 'Get list users' })
   })
-  .post((req, res) => {
-    res.status(StatusCodes.CREATED).json({ message: 'Create new user' })
-  })
+  .post(userValidation.createNewUser)
 
 Router.route('/:id')
   .get((req, res) => {
