@@ -1,9 +1,11 @@
 import { StatusCodes } from 'http-status-codes'
-
+import { userService } from '~/services/userService'
 const createNewUser = async (req, res, next) => {
   try {
-    console.log('req.body', req.body)
-    res.status(StatusCodes.CREATED).json({ message: 'Create new user' })
+    const createdUser = await userService.createNewUser(req.body)
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.CREATED).json(createdUser)
   } catch (error) {
     next(error)
   }

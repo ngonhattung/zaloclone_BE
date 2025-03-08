@@ -15,9 +15,7 @@ const createNewUser = async (req, res, next) => {
     gender: Joi.boolean().required(),
     dayOfBirth: Joi.date()
       .less('now') // Ngày sinh phải trước ngày hiện tại
-      .required(),
-    create_at: Joi.date().timestamp()
-    // update_at: Joi.date().default(Date.now, 'Current date and time')
+      .required()
   })
 
   try {
