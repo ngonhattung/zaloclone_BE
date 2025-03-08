@@ -1,5 +1,6 @@
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/ApiError'
 
 const createNewUser = async (req, res, next) => {
   const schema = Joi.object({
@@ -20,14 +21,14 @@ const createNewUser = async (req, res, next) => {
   })
 
   try {
-    console.log('req.body', req.body)
     await schema.validateAsync(req.body, { abortEarly: false })
-    // next()
-    res.status(StatusCodes.CREATED).json({ message: 'Create new user' })
+
+    // Nếu không có lỗi thì chuyển hướng sang controller
+    next()
   } catch (error) {
-    res
-      .status(StatusCodes.UNPROCESSABLE_ENTITY)
-      .json({ errors: new Error(error).message })
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
   }
 }
 
