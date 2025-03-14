@@ -8,7 +8,7 @@ Router.route('/')
   .get((req, res) => {
     res.status(StatusCodes.OK).json({ message: 'Get list users' })
   })
-  .post(userValidation.createNewUser, userController.createNewUser)
+  .post(userValidation.validateUser, userController.createNewUser)
 
 Router.route('/:id')
   .get((req, res) => {

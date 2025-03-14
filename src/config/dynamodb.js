@@ -1,4 +1,4 @@
-import { AWS } from 'aws-sdk'
+import AWS from 'aws-sdk'
 import { env } from '~/config/environment'
 
 AWS.config.update({
