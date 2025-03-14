@@ -1,5 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { userService } from '~/services/userService'
+import { JwtProvider } from '~/providers/JwtProvider'
 const createNewUser = async (req, res, next) => {
   try {
     const result = await userService.createNewUser(req.body)
@@ -38,6 +39,16 @@ const deleteUser = async (req, res, next) => {
     next(error)
   }
 }
+
+// const login = async (req, res, next) => {
+//   try {
+//     const { email, password } = req.body
+//     const result = await userService.login(email, password)
+//     res.status(StatusCodes.OK).json(result)
+//   } catch (error) {
+//     next(error)
+//   }
+// }
 export const userController = {
   createNewUser,
   getUserById,

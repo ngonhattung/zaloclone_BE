@@ -3,6 +3,11 @@ import dynamoClient from '~/config/dynamodb'
 import { v4 as uuidv4 } from 'uuid'
 import moment from 'moment'
 const USER_TABLE_NAME = 'users'
+
+const USER_ROLE = {
+  ADMIN: 'admin',
+  CLIENT: 'client'
+}
 const USER_TABLE_SCHEMA = Joi.object({
   userID: Joi.string()
     .uuid()
@@ -12,13 +17,16 @@ const USER_TABLE_SCHEMA = Joi.object({
     .required(),
   fullName: Joi.string().min(3).max(100).trim().required(),
   slug: Joi.string().min(3).trim().required(),
-  passWord: Joi.string().min(6).max(50).required(),
+  passWord: Joi.string().min(6).max(100).required(),
   avatar: Joi.string().required().default('https://www.google.com'),
   gender: Joi.boolean().required(),
   dayOfBirth: Joi.date()
     .iso()
     .less('now') // Ngày sinh phải trước ngày hiện tại
     .required(),
+  role: Joi.string()
+    .valid(USER_ROLE.ADMIN, USER_ROLE.CLIENT)
+    .default(USER_ROLE.CLIENT),
   createAt: Joi.date().timestamp('javascript').default(Date.now),
   updateAt: Joi.date().timestamp('javascript').default(null),
   destroy: Joi.boolean().default(false)
@@ -60,6 +68,22 @@ const findOneById = async (id) => {
     }
     const { Item } = await dynamoClient.get(params).promise()
     return Item
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+const findOneByPhoneNumber = async (phoneNumber) => {
+  try {
+    const params = {
+      TableName: USER_TABLE_NAME,
+      IndexName: 'phoneNumberIndex',
+      KeyConditionExpression: 'phoneNumber = :phoneNumber',
+      ExpressionAttributeValues: {
+        ':phoneNumber': phoneNumber
+      }
+    }
+    const { Items } = await dynamoClient.query(params).promise()
+    return Items[0]
   } catch (error) {
     throw new Error(error)
   }

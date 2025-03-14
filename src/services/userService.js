@@ -2,23 +2,29 @@ import { slugify } from '~/utils/formatters'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
+import bcryptjs from 'bcryptjs'
+import { pickUser } from '~/utils/formatters'
 const createNewUser = async (req) => {
-  // eslint-disable-next-line no-useless-catch
   try {
+    // const existedUser = await userModel.findOneByPhoneNumber(req.phoneNumber)
+    // if (existedUser) {
+    //   throw new ApiError(StatusCodes.CONFLICT, 'Phone number is already taken')
+    // }
+
     const newUser = {
       ...req,
+      passWord: bcryptjs.hashSync(req.passWord, 8),
       slug: slugify(req.fullName)
     }
     const result = await userModel.createNew(newUser)
     const getNewUser = await userModel.findOneById(result.userID)
     //Trả kết quả về, trong service luôn phải có return
-    return getNewUser
+    return pickUser(getNewUser)
   } catch (error) {
     throw error
   }
 }
 const getUserById = async (userID) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const result = await userModel.getUserById(userID)
     if (!result) {
@@ -31,7 +37,6 @@ const getUserById = async (userID) => {
 }
 
 const updateUser = async (userID, data) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const user = await userModel.getUserById(userID)
     if (!user) {
@@ -49,7 +54,6 @@ const updateUser = async (userID, data) => {
 }
 
 const deleteUser = async (userID) => {
-  // eslint-disable-next-line no-useless-catch
   try {
     const user = await userModel.getUserById(userID)
     if (!user) {
