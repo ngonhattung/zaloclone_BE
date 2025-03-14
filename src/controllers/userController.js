@@ -11,6 +11,36 @@ const createNewUser = async (req, res, next) => {
   }
 }
 
+const getUserById = async (req, res, next) => {
+  try {
+    const userID = req.params.id
+    const result = await userService.getUserById(userID)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+const updateUser = async (req, res, next) => {
+  try {
+    const userID = req.params.id
+    const result = await userService.updateUser(userID, req.body)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+const deleteUser = async (req, res, next) => {
+  try {
+    const userID = req.params.id
+    await userService.deleteUser(userID)
+    res.status(StatusCodes.NO_CONTENT).send()
+  } catch (error) {
+    next(error)
+  }
+}
 export const userController = {
-  createNewUser
+  createNewUser,
+  getUserById,
+  updateUser,
+  deleteUser
 }

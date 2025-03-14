@@ -21,7 +21,7 @@ const USER_TABLE_SCHEMA = Joi.object({
     .required(),
   createAt: Joi.date().timestamp('javascript').default(Date.now),
   updateAt: Joi.date().timestamp('javascript').default(null),
-  _destroy: Joi.boolean().default(false)
+  destroy: Joi.boolean().default(false)
 })
 
 const validateBeforeCreate = async (data) => {
@@ -64,9 +64,74 @@ const findOneById = async (id) => {
     throw new Error(error)
   }
 }
+const getUserById = async (id) => {
+  try {
+    const params = {
+      TableName: USER_TABLE_NAME,
+      Key: {
+        userID: String(id)
+      }
+    }
+    const { Item } = await dynamoClient.get(params).promise()
+    return Item
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+const updateUser = async (id, data) => {
+  try {
+    const updatedData = {
+      ...data,
+      updateAt: Date.now()
+    }
+    const params = {
+      TableName: USER_TABLE_NAME,
+      Key: {
+        userID: String(id)
+      },
+      UpdateExpression:
+        'set phoneNumber = :phoneNumber, fullName = :fullName, slug = :slug, passWord = :passWord, avatar = :avatar, gender = :gender, dayOfBirth = :dayOfBirth, updateAt = :updateAt',
+      ExpressionAttributeValues: {
+        ':phoneNumber': updatedData.phoneNumber,
+        ':fullName': updatedData.fullName,
+        ':slug': updatedData.slug,
+        ':passWord': updatedData.passWord,
+        ':avatar': updatedData.avatar,
+        ':gender': updatedData.gender,
+        ':dayOfBirth': updatedData.dayOfBirth,
+        ':updateAt': updatedData.updateAt
+      },
+      ReturnValues: 'UPDATED_NEW'
+    }
+    const result = await dynamoClient.update(params).promise()
+    return result.Attributes
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+const deleteUser = async (id) => {
+  try {
+    const params = {
+      TableName: USER_TABLE_NAME,
+      Key: {
+        userID: String(id)
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
+      }
+    }
+    await dynamoClient.update(params).promise()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const userModel = {
   USER_TABLE_NAME,
   USER_TABLE_SCHEMA,
   createNew,
-  findOneById
+  findOneById,
+  getUserById,
+  updateUser,
+  deleteUser
 }

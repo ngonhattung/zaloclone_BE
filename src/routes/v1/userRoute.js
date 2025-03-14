@@ -11,16 +11,7 @@ Router.route('/')
   .post(userValidation.validateUser, userController.createNewUser)
 
 Router.route('/:id')
-  .get((req, res) => {
-    const { id } = req.params
-    res.status(StatusCodes.OK).json({ message: `Get user with ID: ${id}` })
-  })
-  .put((req, res) => {
-    const { id } = req.params
-    res.status(StatusCodes.OK).json({ message: `Update user with ID: ${id}` })
-  })
-  .delete((req, res) => {
-    const { id } = req.params
-    res.status(StatusCodes.OK).json({ message: `Delete user with ID: ${id}` })
-  })
+  .get(userController.getUserById)
+  .put(userValidation.validateUser, userController.updateUser)
+  .delete(userController.deleteUser)
 export const userRoutes = Router
