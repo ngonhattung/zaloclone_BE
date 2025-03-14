@@ -18,5 +18,5 @@ Router.route('/register').post(
   userController.createNewUser
 )
 
-// Router.route('/login').post(userController.login)
+Router.route('/login').post(userValidation.login, userController.login)
 export const userRoutes = Router

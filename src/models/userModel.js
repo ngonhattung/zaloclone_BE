@@ -157,5 +157,6 @@ export const userModel = {
   findOneById,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  findOneByPhoneNumber
 }

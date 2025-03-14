@@ -4,13 +4,14 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import bcryptjs from 'bcryptjs'
 import { pickUser } from '~/utils/formatters'
+import { env } from '~/config/environment'
+import { JwtProvider } from '~/providers/JwtProvider'
 const createNewUser = async (req) => {
   try {
-    // const existedUser = await userModel.findOneByPhoneNumber(req.phoneNumber)
-    // if (existedUser) {
-    //   throw new ApiError(StatusCodes.CONFLICT, 'Phone number is already taken')
-    // }
-
+    const existedUser = await userModel.findOneByPhoneNumber(req.phoneNumber)
+    if (existedUser) {
+      throw new ApiError(StatusCodes.CONFLICT, 'Phone number is already taken')
+    }
     const newUser = {
       ...req,
       passWord: bcryptjs.hashSync(req.passWord, 8),
@@ -64,9 +65,46 @@ const deleteUser = async (userID) => {
     throw error
   }
 }
+
+const login = async (req) => {
+  try {
+    const user = await userModel.findOneByPhoneNumber(req.phoneNumber)
+    if (!user) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+    }
+    if (!bcryptjs.compareSync(req.passWord, user.passWord)) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Password is incorrect')
+    }
+
+    const userInfo = {
+      userID: user.userID,
+      phoneNumber: user.phoneNumber
+    }
+
+    const accessToken = await JwtProvider.generateToken(
+      userInfo,
+      env.ACCESS_TOKEN_SECRET,
+      env.ACCESS_TOKEN_LIFE
+    )
+    const refreshToken = await JwtProvider.generateToken(
+      userInfo,
+      env.REFRESH_TOKEN_SECRET,
+      env.REFRESH_TOKEN_LIFE
+    )
+
+    return {
+      accessToken,
+      refreshToken,
+      ...pickUser(user)
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const userService = {
   createNewUser,
   getUserById,
   updateUser,
-  deleteUser
+  deleteUser,
+  login
 }

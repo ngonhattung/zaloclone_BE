@@ -28,6 +28,26 @@ const validateUser = async (req, res, next) => {
   }
 }
 
+const login = async (req, res, next) => {
+  const schema = Joi.object({
+    phoneNumber: Joi.string()
+      .pattern(/^[0-9]{10,12}$/)
+      .required(),
+    passWord: Joi.string().min(6).max(50).required()
+  })
+
+  try {
+    await schema.validateAsync(req.body, { abortEarly: false })
+
+    // Nếu không có lỗi thì chuyển hướng sang controller
+    next()
+  } catch (error) {
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
+  }
+}
 export const userValidation = {
-  validateUser
+  validateUser,
+  login
 }
