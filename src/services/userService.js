@@ -101,10 +101,37 @@ const login = async (req) => {
     throw error
   }
 }
+
+const refreshToken = async (refreshToken) => {
+  try {
+    const decoded = JwtProvider.verifyToken(
+      refreshToken,
+      env.REFRESH_TOKEN_SECRET
+    )
+
+    const userInfo = {
+      userID: decoded.userID,
+      phoneNumber: decoded.phoneNumber
+    }
+
+    const accessToken = await JwtProvider.generateToken(
+      userInfo,
+      env.ACCESS_TOKEN_SECRET,
+      env.ACCESS_TOKEN_LIFE
+    )
+
+    return {
+      accessToken
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const userService = {
   createNewUser,
   getUserById,
   updateUser,
   deleteUser,
-  login
+  login,
+  refreshToken
 }
