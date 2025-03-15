@@ -5,15 +5,10 @@ import ApiError from '~/utils/ApiError'
 
 //Middle ware kiểm tra token
 const isAuthorized = async (req, res, next) => {
-  let accessToken = req.headers.authorization
+  let accessToken = req.cookies?.accessToken
   if (!accessToken) {
     next(new ApiError(StatusCodes.UNAUTHORIZED, 'Token is required'))
     return
-  }
-  if (accessToken.startsWith('Bearer ')) {
-    accessToken = accessToken.split(' ')[1]
-  } else {
-    return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token format'))
   }
   try {
     const decoded = JwtProvider.verifyToken(

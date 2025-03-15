@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { userService } from '~/services/userService'
-import { JwtProvider } from '~/providers/JwtProvider'
+import ms from 'ms'
 const createNewUser = async (req, res, next) => {
   try {
     const result = await userService.createNewUser(req.body)
@@ -43,6 +43,40 @@ const deleteUser = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const result = await userService.login(req.body)
+
+    //Set cookie cho client
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms('14 days')
+    })
+
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms('14 days')
+    })
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const logout = async (req, res, next) => {
+  try {
+    const result = await userService.logout(req.body)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const refreshToken = async (req, res, next) => {
+  try {
+    const result = await userService.refreshToken(req.body)
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
@@ -53,5 +87,7 @@ export const userController = {
   getUserById,
   updateUser,
   deleteUser,
-  login
+  login,
+  logout,
+  refreshToken
 }
