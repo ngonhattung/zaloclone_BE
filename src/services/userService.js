@@ -6,6 +6,7 @@ import bcryptjs from 'bcryptjs'
 import { pickUser } from '~/utils/formatters'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
+import { S3Provider } from '~/providers/S3Provider'
 const createNewUser = async (req) => {
   try {
     const existedUser = await userModel.findOneByPhoneNumber(req.phoneNumber)
@@ -37,7 +38,7 @@ const getUserById = async (userID) => {
   }
 }
 
-const updateUser = async (userID, data) => {
+const updateUser = async (userID, data, userAvatarFile) => {
   try {
     const user = await userModel.findOneById(userID)
     if (!user) {
@@ -55,6 +56,12 @@ const updateUser = async (userID, data) => {
       }
       updateUser = await userModel.updateUser(userID, {
         passWord: bcryptjs.hashSync(data.newPassWord, 8)
+      })
+    } else if (userAvatarFile) {
+      const uploadResult = await S3Provider.streamUpload(userAvatarFile, userID)
+      updateUser = await userModel.updateUser(userID, {
+        ...data,
+        avatar: uploadResult.Key
       })
     } else {
       updateUser = await userModel.updateUser(userID, {

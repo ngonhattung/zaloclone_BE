@@ -1,0 +1,17 @@
+import s3Client from '~/config/s3'
+
+const streamUpload = (file, userId) => {
+  const image = file.originalname.split('.')
+  const fileType = image[image.length - 1]
+  const fileName = `${userId}_${Date.now().toString()}.${fileType}`
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: fileName,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read'
+  }
+  return s3Client.upload(params).promise()
+}
+
+export const S3Provider = { streamUpload }

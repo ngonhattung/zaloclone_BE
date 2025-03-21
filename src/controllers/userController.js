@@ -26,8 +26,11 @@ const updateUser = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
     const userAvatarFile = req.file
-    console.log('userAvatarFile', userAvatarFile)
-    const result = await userService.updateUser(userID, req.body)
+    const result = await userService.updateUser(
+      userID,
+      req.body,
+      userAvatarFile
+    )
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)

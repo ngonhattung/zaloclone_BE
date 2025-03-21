@@ -4,5 +4,7 @@ export const ALLOW_COMMON_FILE_TYPE = [
   'image/png',
   'image/jpg',
   'video/mp4',
-  'video/3gp'
+  'video/3gp',
+  'application/vnd.rar',
+  'application/zip'
 ]
