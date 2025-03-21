@@ -108,25 +108,56 @@ const updateUser = async (id, data) => {
       ...data,
       updateAt: Date.now()
     }
+    console.log('Updated data:', updatedData)
+
+    let updateExpression
+    let expressionAttributeValues = { ':updateAt': updatedData.updateAt }
+
+    if (updatedData.passWord) {
+      updateExpression = 'set passWord = :passWord, updateAt = :updateAt'
+      expressionAttributeValues[':passWord'] = data.passWord
+    } else {
+      updateExpression =
+        'set ' +
+        Object.keys(updatedData)
+          .filter((key) => key !== 'passWord')
+          .map((key) => `${key} = :${key}`)
+          .join(', ')
+
+      Object.keys(updatedData)
+        .filter((key) => key !== 'passWord')
+        .forEach((key) => {
+          expressionAttributeValues[`:${key}`] = updatedData[key]
+        })
+    }
     const params = {
       TableName: USER_TABLE_NAME,
       Key: {
         userID: String(id)
       },
-      UpdateExpression:
-        'set phoneNumber = :phoneNumber, fullName = :fullName, slug = :slug, passWord = :passWord, avatar = :avatar, gender = :gender, dayOfBirth = :dayOfBirth, updateAt = :updateAt',
-      ExpressionAttributeValues: {
-        ':phoneNumber': updatedData.phoneNumber,
-        ':fullName': updatedData.fullName,
-        ':slug': updatedData.slug,
-        ':passWord': updatedData.passWord,
-        ':avatar': updatedData.avatar,
-        ':gender': updatedData.gender,
-        ':dayOfBirth': updatedData.dayOfBirth,
-        ':updateAt': updatedData.updateAt
-      },
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'UPDATED_NEW'
     }
+    // const params = {
+    //   TableName: USER_TABLE_NAME,
+    //   Key: {
+    //     userID: String(id)
+    //   },
+    //   UpdateExpression:
+    //     'set phoneNumber = :phoneNumber, fullName = :fullName, slug = :slug, passWord = :passWord, avatar = :avatar, gender = :gender, dayOfBirth = :dayOfBirth, updateAt = :updateAt',
+    //   ExpressionAttributeValues: {
+    //     ':phoneNumber': updatedData.phoneNumber,
+    //     ':fullName': updatedData.fullName,
+    //     ':slug': updatedData.slug,
+    //     ':passWord': updatedData.passWord,
+    //     ':avatar': updatedData.avatar,
+    //     ':gender': updatedData.gender,
+    //     ':dayOfBirth': updatedData.dayOfBirth,
+    //     ':updateAt': updatedData.updateAt
+    //   },
+    //   ReturnValues: 'UPDATED_NEW'
+    // }
     const result = await dynamoClient.update(params).promise()
     return result.Attributes
   } catch (error) {

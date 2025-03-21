@@ -11,14 +11,14 @@ const isAuthorized = async (req, res, next) => {
     return
   }
   try {
-    const decoded = JwtProvider.verifyToken(
+    const decoded = await JwtProvider.verifyToken(
       accessToken,
       env.ACCESS_TOKEN_SECRET
     )
+    //Lưu thông tin user vào req sau khi giải mã
     req.jwtDecoded = decoded
     next()
   } catch (error) {
-    console.log('middleware error', error)
     if (error?.message?.includes('jwt expired')) {
       next(new ApiError(StatusCodes.GONE, 'Need to refresh token'))
       return

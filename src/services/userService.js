@@ -39,16 +39,31 @@ const getUserById = async (userID) => {
 
 const updateUser = async (userID, data) => {
   try {
-    const user = await userModel.getUserById(userID)
+    const user = await userModel.findOneById(userID)
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
     }
-    const updateUser = {
-      ...data,
-      slug: slugify(data.fullName)
+
+    let updateUser = {}
+
+    if (data.currentPassWord && data.newPassWord) {
+      if (!bcryptjs.compareSync(data.currentPassWord, user.passWord)) {
+        throw new ApiError(
+          StatusCodes.NOT_ACCEPTABLE,
+          'Current password is incorrect'
+        )
+      }
+      updateUser = await userModel.updateUser(userID, {
+        passWord: bcryptjs.hashSync(data.newPassWord, 8)
+      })
+    } else {
+      updateUser = await userModel.updateUser(userID, {
+        ...data,
+        slug: slugify(data.fullName)
+      })
     }
-    const result = await userModel.updateUser(userID, updateUser)
-    return result
+
+    return pickUser(updateUser)
   } catch (error) {
     throw error
   }
@@ -56,7 +71,7 @@ const updateUser = async (userID, data) => {
 
 const deleteUser = async (userID) => {
   try {
-    const user = await userModel.getUserById(userID)
+    const user = await userModel.findOneById(userID)
     if (!user) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
     }
@@ -104,7 +119,7 @@ const login = async (req) => {
 
 const refreshToken = async (refreshToken) => {
   try {
-    const decoded = JwtProvider.verifyToken(
+    const decoded = await JwtProvider.verifyToken(
       refreshToken,
       env.REFRESH_TOKEN_SECRET
     )

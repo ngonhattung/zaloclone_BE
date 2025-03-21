@@ -24,7 +24,9 @@ const getUserById = async (req, res, next) => {
 }
 const updateUser = async (req, res, next) => {
   try {
-    const userID = req.params.id
+    const userID = req.jwtDecoded.userID
+    const userAvatarFile = req.file
+    console.log('userAvatarFile', userAvatarFile)
     const result = await userService.updateUser(userID, req.body)
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
@@ -33,7 +35,7 @@ const updateUser = async (req, res, next) => {
 }
 const deleteUser = async (req, res, next) => {
   try {
-    const userID = req.params.id
+    const userID = req.jwtDecoded.userID
     await userService.deleteUser(userID)
     res.status(StatusCodes.NO_CONTENT).send()
   } catch (error) {
