@@ -30,18 +30,13 @@ const validateUser = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   const schema = Joi.object({
-    phoneNumber: Joi.string()
-      .pattern(/^[0-9]{10,12}$/)
-      .required(),
-    fullName: Joi.string().min(3).max(100).trim().required(),
+    phoneNumber: Joi.string().pattern(/^[0-9]{10,12}$/),
+    fullName: Joi.string().min(3).max(100).trim(),
     currentPassWord: Joi.string().min(6).max(50),
     newPassWord: Joi.string().min(6).max(50),
-    avatar: Joi.string().required(),
-    gender: Joi.boolean().required(),
-    dayOfBirth: Joi.date()
-      .iso()
-      .less('now') // Ngày sinh phải trước ngày hiện tại
-      .required()
+    avatar: Joi.string(),
+    gender: Joi.boolean(),
+    dayOfBirth: Joi.date().iso().less('now') // Ngày sinh phải trước ngày hiện tại
   })
 
   try {
