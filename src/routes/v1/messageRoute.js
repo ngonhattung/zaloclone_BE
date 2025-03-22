@@ -13,20 +13,20 @@ Router.route('/send/:receiverId').post(
   authMiddleware.isAuthorized,
   messageController.sendMessage
 )
-Router.route('/send/images/:receiverId').post(
-  authMiddleware.isAuthorized,
-  multerUploadMiddleware.upload.array('images', 10),
-  messageController.sendImages
-)
+// Router.route('/send/images/:receiverId').post(
+//   authMiddleware.isAuthorized,
+//   multerUploadMiddleware.upload.array('images', 10),
+//   messageController.sendImages
+// )
 Router.route('/send/files/:receiverId').post(
   authMiddleware.isAuthorized,
   multerUploadMiddleware.upload.array('files', 10),
   messageController.sendFiles
 )
-Router.route('/send/videos/:receiverId').post(
-  authMiddleware.isAuthorized,
-  multerUploadMiddleware.upload.array('videos', 10),
-  messageController.sendVideos
-)
+// Router.route('/send/videos/:receiverId').post(
+//   authMiddleware.isAuthorized,
+//   multerUploadMiddleware.upload.array('videos', 10),
+//   messageController.sendVideos
+// )
 
 export const messageRoutes = Router
