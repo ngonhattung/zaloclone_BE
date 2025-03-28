@@ -13,7 +13,17 @@ const getConversations = async (userID) => {
     throw error
   }
 }
-
+const getConversationByName = async (conversationName) => {
+  try {
+    const result = await conversationModel.getConversationByName(
+      conversationName
+    )
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationService = {
-  getConversations
+  getConversations,
+  getConversationByName
 }

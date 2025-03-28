@@ -172,7 +172,13 @@ const sendFiles = async (userID, receiverId, files) => {
       }
     } else {
       //Nếu chưa từng nhắn tin
-      const createConversation = await conversationModel.createNewConversation()
+      const receiver = await userModel.getUserById(receiverId)
+      if (!receiver) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
+      }
+      const createConversation = await conversationModel.createNewConversation(
+        receiver.fullName
+      )
 
       //Đưa upload file vào mảng promiseUpload
       const promiseUpload = files.map((file) =>
@@ -345,8 +351,12 @@ const shareMessage = async (userID, receiverIds, messageID) => {
           msg = { conversation, createNewMessage }
         } else {
           // Chưa có cuộc trò chuyện -> Tạo cuộc trò chuyện mới
+          const receiver = await userModel.getUserById(receiverId)
+          if (!receiver) {
+            throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
+          }
           const createConversation =
-            await conversationModel.createNewConversation()
+            await conversationModel.createNewConversation(receiver.fullName)
 
           const messageData = {
             conversationID: createConversation.conversationID,

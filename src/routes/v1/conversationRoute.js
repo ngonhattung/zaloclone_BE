@@ -9,9 +9,9 @@ Router.route('/').get(
   conversationController.getConversations
 )
 
-Router.route('/:conversationId').get(
+Router.route('/:conversationName').get(
   authMiddleware.isAuthorized,
-  conversationController.getConversation
+  conversationController.getConversationByName
 )
 
 export const conversationRoutes = Router

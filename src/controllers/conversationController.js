@@ -14,6 +14,21 @@ const getConversations = async (req, res, next) => {
   }
 }
 
+const getConversationByName = async (req, res, next) => {
+  try {
+    const { conversationName } = req.params
+    const result = await conversationService.getConversationByName(
+      conversationName
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.CREATED).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const conversationController = {
-  getConversations
+  getConversations,
+  getConversationByName
 }

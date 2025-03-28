@@ -167,6 +167,25 @@ const getConversations = async (userID) => {
     throw error
   }
 }
+const getConversationByName = async (conversationName) => {
+  try {
+    const result = await dynamoClient
+      .scan({
+        TableName: CONVERSATION_TABLE_NAME,
+        FilterExpression: 'contains(conversationName, :conversationName)',
+        ExpressionAttributeValues: { ':conversationName': conversationName }
+      })
+      .promise()
+
+    if (!result.Items || result.Items.length === 0) {
+      return null
+    }
+
+    return result.Items
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationModel = {
   CONVERSATION_TABLE_NAME,
   haveTheyChatted,
@@ -174,5 +193,6 @@ export const conversationModel = {
   addUserToConversation,
   updateLastMessage,
   findConversationByID,
-  getConversations
+  getConversations,
+  getConversationByName
 }
