@@ -18,7 +18,7 @@ const USER_TABLE_SCHEMA = Joi.object({
   fullName: Joi.string().min(3).max(100).trim().required(),
   slug: Joi.string().min(3).trim().required(),
   passWord: Joi.string().min(6).max(100).required(),
-  avatar: Joi.string().required().default('https://www.google.com'),
+  avatar: Joi.string(),
   gender: Joi.boolean().required(),
   dayOfBirth: Joi.date()
     .iso()

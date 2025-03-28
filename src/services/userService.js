@@ -7,14 +7,16 @@ import { pickUser } from '~/utils/formatters'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { S3Provider } from '~/providers/S3Provider'
-const createNewUser = async (req) => {
+const createNewUser = async (req, avatar) => {
   try {
     const existedUser = await userModel.findOneByPhoneNumber(req.phoneNumber)
     if (existedUser) {
       throw new ApiError(StatusCodes.CONFLICT, 'Phone number is already taken')
     }
+    const uploadResult = await S3Provider.streamUpload(avatar)
     const newUser = {
       ...req,
+      avatar: uploadResult.Location,
       passWord: bcryptjs.hashSync(req.passWord, 8),
       slug: slugify(req.fullName)
     }

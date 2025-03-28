@@ -4,7 +4,9 @@ import ApiError from '~/utils/ApiError'
 import ms from 'ms'
 const createNewUser = async (req, res, next) => {
   try {
-    const result = await userService.createNewUser(req.body)
+    const userAvatarFile = req.file
+    console.log('User avatar file:', userAvatarFile)
+    const result = await userService.createNewUser(req.body, userAvatarFile)
 
     //Có kết quả trả về client
     res.status(StatusCodes.CREATED).json(result)

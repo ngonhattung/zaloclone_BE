@@ -8,7 +8,7 @@ const validateUser = async (req, res, next) => {
       .required(),
     fullName: Joi.string().min(3).max(100).trim().required(),
     passWord: Joi.string().min(6).max(50).required(),
-    avatar: Joi.string().required(),
+    avatar: Joi.string(),
     gender: Joi.boolean().required(),
     dayOfBirth: Joi.date()
       .iso()

@@ -27,6 +27,7 @@ Router.route('/delete').delete(
   userController.deleteUser
 )
 Router.route('/register').post(
+  multerUploadMiddleware.upload.single('avatar'),
   userValidation.validateUser,
   userController.createNewUser
 )
