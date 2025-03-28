@@ -358,6 +358,7 @@ const shareMessage = async (userID, receiverIds, messageID) => {
             lastMessage: createNewMessage.messageID
           }
 
+          //Xử lý song song
           await Promise.all([
             conversationModel.addUserToConversation(userID, userConversation),
             conversationModel.addUserToConversation(
