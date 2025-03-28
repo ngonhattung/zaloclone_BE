@@ -60,7 +60,7 @@ const updateUser = async (userID, data, userAvatarFile) => {
     } else if (userAvatarFile) {
       const uploadResult = await S3Provider.streamUpload(userAvatarFile, userID)
       updateUser = await userModel.updateUser(userID, {
-        avatar: uploadResult.Key
+        avatar: uploadResult.Location
       })
     } else {
       updateUser = await userModel.updateUser(userID, {

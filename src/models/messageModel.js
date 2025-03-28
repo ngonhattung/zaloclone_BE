@@ -12,6 +12,7 @@ const createNewMessage = async (messageData) => {
       conversationID: messageData.conversationID,
       senderID: messageData.senderID,
       messageContent: messageData.content,
+      messageUrl: messageData.url || null,
       messageType: messageData.type,
       createdAt: Date.now(),
       updatedAt: null
