@@ -8,8 +8,7 @@ const streamUpload = (file, userId) => {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName,
     Body: file.buffer,
-    ContentType: file.mimetype,
-    ACL: 'public-read'
+    ContentType: file.mimetype
   }
   return s3Client.upload(params).promise()
 }
