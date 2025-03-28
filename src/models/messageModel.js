@@ -55,7 +55,7 @@ const revokeMessage = async (messageID) => {
       UpdateExpression: 'set revoke = :r, updatedAt = :u',
       ExpressionAttributeValues: {
         ':r': true,
-        ':u': moment().format()
+        ':u': Date.now()
       },
       ReturnValues: 'ALL_NEW'
     }

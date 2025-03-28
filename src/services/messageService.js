@@ -4,6 +4,7 @@ import { conversationModel } from '~/models/conversationModel'
 import { messageModel } from '~/models/messageModel'
 import { getReceiverSocketId, getUserSocketId, io } from '~/config/socket'
 import { S3Provider } from '~/providers/S3Provider'
+import { userModel } from '~/models/userModel'
 const sendMessage = async (userID, receiverId, message) => {
   try {
     // Tìm xem 2 người đã từng gửi tin nhắn với nhau hay chưa
@@ -50,7 +51,13 @@ const sendMessage = async (userID, receiverId, message) => {
       - Lưu conversationID + info vào message
       - Lưu userId của 2 người vào user_conversation + lastMessage
     */
-      const createConversation = await conversationModel.createNewConversation()
+      const receiver = await userModel.getUserById(receiverId)
+      if (!receiver) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
+      }
+      const createConversation = await conversationModel.createNewConversation(
+        receiver.fullName
+      )
 
       const messageData = {
         conversationID: createConversation.conversationID,

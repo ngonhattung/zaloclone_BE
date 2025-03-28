@@ -1,15 +1,14 @@
-import Joi from 'joi'
 import dynamoClient from '~/config/dynamodb'
 import { v4 as uuidv4 } from 'uuid'
 import moment from 'moment'
-
-const CONVERSASION_TABLE_NAME = 'conversations'
-const USERCONVERSASION_TABLE_NAME = 'userConversations'
+import { messageModel } from './messageModel'
+const CONVERSATION_TABLE_NAME = 'conversations'
+const USERCONVERSATION_TABLE_NAME = 'userConversations'
 const haveTheyChatted = async (userID, receiverId) => {
   try {
     const convUser = await dynamoClient
       .query({
-        TableName: USERCONVERSASION_TABLE_NAME,
+        TableName: USERCONVERSATION_TABLE_NAME,
         KeyConditionExpression: 'userID = :userID',
         ExpressionAttributeValues: { ':userID': userID }
       })
@@ -18,7 +17,7 @@ const haveTheyChatted = async (userID, receiverId) => {
     // Lấy danh sách các cuộc hội thoại của receiverId
     const convReceiver = await dynamoClient
       .query({
-        TableName: USERCONVERSASION_TABLE_NAME,
+        TableName: USERCONVERSATION_TABLE_NAME,
         KeyConditionExpression: 'userID = :receiverId',
         ExpressionAttributeValues: { ':receiverId': receiverId }
       })
@@ -41,20 +40,20 @@ const haveTheyChatted = async (userID, receiverId) => {
   }
 }
 
-const createNewConversation = async () => {
+const createNewConversation = async (fullName) => {
   try {
     const conversationID = uuidv4()
 
     const info = {
       conversationID,
       conversationType: 'private',
-      conversationName: null,
+      conversationName: fullName,
       createdAt: Date.now(),
       updatedAt: null
     }
 
     const params = {
-      TableName: CONVERSASION_TABLE_NAME,
+      TableName: CONVERSATION_TABLE_NAME,
       Item: info
     }
 
@@ -69,11 +68,13 @@ const createNewConversation = async () => {
 const addUserToConversation = async (userID, userConversation) => {
   try {
     const params = {
-      TableName: USERCONVERSASION_TABLE_NAME,
+      TableName: USERCONVERSATION_TABLE_NAME,
       Item: {
         userID: userID,
         conversationID: userConversation.conversationID,
-        lastMessageID: userConversation.lastMessage
+        lastMessageID: userConversation.lastMessage,
+        createdAt: Date.now(),
+        updatedAt: null
       }
     }
     await dynamoClient.put(params).promise()
@@ -86,14 +87,16 @@ const addUserToConversation = async (userID, userConversation) => {
 const updateLastMessage = async (userID, userConversation) => {
   try {
     const params = {
-      TableName: USERCONVERSASION_TABLE_NAME,
+      TableName: USERCONVERSATION_TABLE_NAME,
       Key: {
         userID: userID,
         conversationID: userConversation.conversationID
       },
-      UpdateExpression: 'set lastMessageID = :lastMessage',
+      UpdateExpression:
+        'set lastMessageID = :lastMessage, updatedAt = :updatedAt',
       ExpressionAttributeValues: {
-        ':lastMessage': userConversation.lastMessage
+        ':lastMessage': userConversation.lastMessage,
+        ':updatedAt': Date.now()
       }
     }
     await dynamoClient.update(params).promise()
@@ -106,7 +109,7 @@ const updateLastMessage = async (userID, userConversation) => {
 const findConversationByID = async (conversationID) => {
   try {
     const params = {
-      TableName: CONVERSASION_TABLE_NAME,
+      TableName: CONVERSATION_TABLE_NAME,
       Key: {
         conversationID
       }
@@ -117,11 +120,59 @@ const findConversationByID = async (conversationID) => {
     throw new Error(error)
   }
 }
+
+const getConversations = async (userID) => {
+  try {
+    const result = await dynamoClient
+      .query({
+        TableName: USERCONVERSATION_TABLE_NAME,
+        KeyConditionExpression: 'userID = :userID',
+        ExpressionAttributeValues: { ':userID': userID }
+      })
+      .promise()
+
+    if (!result.Items || result.Items.length === 0) {
+      return [] // Không có cuộc trò chuyện nào
+    }
+
+    // Lấy danh sách conversationID và lastMessageID
+    const conversationIDs = result.Items.map(
+      (item) => item.conversationID
+    ).filter((id) => id)
+
+    const lastMessageIDs = result.Items.map(
+      (item) => item.lastMessageID
+    ).filter((id) => id)
+
+    // Truy vấn tất cả conversationName từ bảng conversations
+    const conversationNames = await Promise.all(
+      conversationIDs.map((id) => conversationModel.findConversationByID(id))
+    )
+
+    // Truy vấn tất cả tin nhắn bằng BatchGetItem để giảm số lần gọi DB
+    const lastMessages = await Promise.all(
+      lastMessageIDs.map((id) => messageModel.findMessageByID(id))
+    )
+
+    // Kết hợp dữ liệu
+    const conversations = result.Items.map((item, index) => ({
+      conversation: item,
+      conversationName: conversationNames[index]?.name || 'Unknown',
+      lastMessage: lastMessages[index] || null
+    }))
+
+    console.log('Conversations:', conversations)
+    return conversations
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationModel = {
-  CONVERSASION_TABLE_NAME,
+  CONVERSATION_TABLE_NAME,
   haveTheyChatted,
   createNewConversation,
   addUserToConversation,
   updateLastMessage,
-  findConversationByID
+  findConversationByID,
+  getConversations
 }

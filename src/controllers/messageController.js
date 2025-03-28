@@ -1,6 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
 import { messageService } from '~/services/messageService'
-import { userService } from '~/services/userService'
 import ApiError from '~/utils/ApiError'
 
 const sendMessage = async (req, res, next) => {
