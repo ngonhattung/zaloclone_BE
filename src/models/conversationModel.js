@@ -145,22 +145,68 @@ const getConversations = async (userID) => {
     ).filter((id) => id)
 
     // Truy vấn tất cả conversationName từ bảng conversations
-    const conversationNames = await Promise.all(
-      conversationIDs.map((id) => conversationModel.findConversationByID(id))
-    )
+    // const conversationNames = await Promise.all(
+    //   conversationIDs.map((id) => conversationModel.findConversationByID(id))
+    // )
 
-    // Truy vấn tất cả tin nhắn bằng BatchGetItem để giảm số lần gọi DB
-    const lastMessages = await Promise.all(
-      lastMessageIDs.map((id) => messageModel.findMessageByID(id))
-    )
+    let conversationMap = {}
+    if (conversationIDs.length > 0) {
+      const conversationData = await dynamoClient
+        .batchGet({
+          RequestItems: {
+            [CONVERSATION_TABLE_NAME]: {
+              Keys: conversationIDs.map((id) => ({ conversationID: id }))
+            }
+          }
+        })
+        .promise()
+
+      // Chuyển thành Map để truy xuất nhanh
+      conversationMap = (
+        conversationData.Responses[CONVERSATION_TABLE_NAME] || []
+      ).reduce((acc, convo) => {
+        acc[convo.conversationID] = convo.name
+        return acc
+      }, {})
+    }
+
+    // Truy vấn tất cả tin nhắn
+    // const lastMessages = await Promise.all(
+    //   lastMessageIDs.map((id) => messageModel.findMessageByID(id))
+    // )
+
+    let messageMap = {}
+    if (lastMessageIDs.length > 0) {
+      const messageData = await dynamoClient
+        .batchGet({
+          RequestItems: {
+            [messageModel.MESSAGE_TABLE_NAME]: {
+              Keys: lastMessageIDs.map((id) => ({ messageID: id }))
+            }
+          }
+        })
+        .promise()
+
+      // Chuyển thành Map để truy xuất nhanh
+      messageMap = (
+        messageData.Responses[messageModel.MESSAGE_TABLE_NAME] || []
+      ).reduce((acc, msg) => {
+        acc[msg.messageID] = msg
+        return acc
+      }, {})
+    }
 
     // Kết hợp dữ liệu
-    const conversations = result.Items.map((item, index) => ({
+    // const conversations = result.Items.map((item, index) => ({
+    //   conversation: item,
+    //   conversationName: conversationNames[index]?.name || 'Unknown',
+    //   lastMessage: lastMessages[index] || null
+    // }))
+    const conversations = result.Items.map((item) => ({
       conversation: item,
-      conversationName: conversationNames[index]?.name || 'Unknown',
-      lastMessage: lastMessages[index] || null
+      conversationName: conversationMap[item.conversationID] || 'Unknown',
+      lastMessage: messageMap[item.lastMessageID] || null
     }))
-
     console.log('Conversations:', conversations)
     return conversations
   } catch (error) {
