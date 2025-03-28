@@ -1,6 +1,7 @@
 import dynamoClient from '~/config/dynamodb'
 import { v4 as uuidv4 } from 'uuid'
 import { userModel } from './userModel'
+
 const FRIENDS_TABLE_NAME = 'friends'
 
 const getFriends = async (userID) => {
@@ -90,10 +91,48 @@ const cancelFriendRequest = async (senderID, receiverID) => {
     throw error
   }
 }
+
+const acceptFriendRequest = async (senderID, receiverID) => {
+  try {
+    await dynamoClient
+      .update({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID: senderID,
+          friendID: receiverID
+        },
+        UpdateExpression: 'set friendStatus = :status, updatedAt = :updatedAt',
+        ExpressionAttributeValues: {
+          ':status': 'accepted',
+          ':updatedAt': Date.now()
+        }
+      })
+      .promise()
+
+    await dynamoClient
+      .put({
+        TableName: FRIENDS_TABLE_NAME,
+        Item: {
+          userID: receiverID,
+          friendID: senderID,
+          friendStatus: 'accepted',
+          createdAt: Date.now(),
+          updatedAt: null
+        }
+      })
+      .promise()
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
 export const friendModel = {
   FRIENDS_TABLE_NAME,
   getFriends,
   createFriendRequest,
   getFriend,
-  cancelFriendRequest
+  cancelFriendRequest,
+  acceptFriendRequest
 }

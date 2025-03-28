@@ -66,8 +66,50 @@ const cancelFriendRequest = async (senderID, receiverID) => {
   }
 }
 
+const acceptFriendRequest = async (senderID, receiverID) => {
+  try {
+    if (senderID === receiverID) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'You can not accept friend request from yourself'
+      )
+    }
+
+    const friendRequest = await friendModel.getFriend(senderID, receiverID)
+    if (!friendRequest) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friend request not found')
+    }
+
+    const result = await friendModel.acceptFriendRequest(senderID, receiverID)
+
+    if (result) {
+      const sender = await userModel.getUserById(senderID)
+      const receiver = await userModel.getUserById(receiverID)
+
+      const senderSocketID = getUserSocketId(senderID)
+      const receiverSocketID = getReceiverSocketId(receiverID)
+
+      if (senderSocketID) {
+        io.to(senderSocketID).emit('friendRequestAccepted', {
+          sender
+        })
+      }
+
+      if (receiverSocketID) {
+        io.to(receiverSocketID).emit('friendRequestAccepted', {
+          receiver
+        })
+      }
+
+      return { msg: 'Friend request has been accepted' }
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const friendService = {
   getFriends,
   friendRequest,
-  cancelFriendRequest
+  cancelFriendRequest,
+  acceptFriendRequest
 }

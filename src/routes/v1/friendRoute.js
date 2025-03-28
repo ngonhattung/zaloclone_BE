@@ -13,4 +13,9 @@ Router.route('/:receiverID/cancel').get(
   authMiddleware.isAuthorized,
   friendController.cancelFriendRequest
 )
+
+Router.route('/:receiverID/accept').get(
+  authMiddleware.isAuthorized,
+  friendController.acceptFriendRequest
+)
 export const friendRoutes = Router

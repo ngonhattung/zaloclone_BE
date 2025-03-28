@@ -37,8 +37,22 @@ const cancelFriendRequest = async (req, res, next) => {
     next(error)
   }
 }
+
+const acceptFriendRequest = async (req, res, next) => {
+  try {
+    const receiverID = req.jwtDecoded.userID
+    const senderID = req.params.senderID
+    const result = await friendService.acceptFriendRequest(senderID, receiverID)
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const friendController = {
   getFriends,
   friendRequest,
-  cancelFriendRequest
+  cancelFriendRequest,
+  acceptFriendRequest
 }
