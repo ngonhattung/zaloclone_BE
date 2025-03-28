@@ -1,6 +1,5 @@
 import dynamoClient from '~/config/dynamodb'
 import { v4 as uuidv4 } from 'uuid'
-import moment from 'moment'
 import { userModel } from './userModel'
 const FRIENDS_TABLE_NAME = 'friends'
 
@@ -34,8 +33,30 @@ const getFriends = async (userID) => {
     throw error
   }
 }
+const createFriendRequest = async (senderID, receiverID) => {
+  try {
+    const friendShip = {
+      userID: senderID,
+      friendID: receiverID,
+      friendStatus: 'pending',
+      createdAt: Date.now(),
+      updatedAt: null
+    }
 
+    await dynamoClient
+      .put({
+        TableName: FRIENDS_TABLE_NAME,
+        Item: friendShip
+      })
+      .promise()
+
+    return friendShip
+  } catch (error) {
+    throw error
+  }
+}
 export const friendModel = {
   FRIENDS_TABLE_NAME,
-  getFriends
+  getFriends,
+  createFriendRequest
 }

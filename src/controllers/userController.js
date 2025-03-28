@@ -14,7 +14,16 @@ const createNewUser = async (req, res, next) => {
     next(error)
   }
 }
-
+const getMe = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    console.log('User ID:', userID)
+    const result = await userService.getUserById(userID)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 const getUserById = async (req, res, next) => {
   try {
     const userID = req.params.id
@@ -106,5 +115,6 @@ export const userController = {
   deleteUser,
   login,
   logout,
-  refreshToken
+  refreshToken,
+  getMe
 }

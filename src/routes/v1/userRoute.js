@@ -10,6 +10,7 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'Get list users' })
 })
 
+Router.route('/me').get(authMiddleware.isAuthorized, userController.getMe)
 Router.route('/:id').get(
   authMiddleware.isAuthorized,
   userController.getUserById
