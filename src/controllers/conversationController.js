@@ -8,7 +8,7 @@ const getConversations = async (req, res, next) => {
     const result = await conversationService.getConversations(userID)
 
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }
@@ -22,7 +22,7 @@ const getConversationByName = async (req, res, next) => {
     )
 
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }

@@ -51,7 +51,7 @@ const deleteUser = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
     await userService.deleteUser(userID)
-    res.status(StatusCodes.NO_CONTENT).send()
+    res.status(StatusCodes.OK).send()
   } catch (error) {
     next(error)
   }

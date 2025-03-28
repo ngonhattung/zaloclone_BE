@@ -10,7 +10,7 @@ const sendMessage = async (req, res, next) => {
 
     const result = await messageService.sendMessage(userID, receiverId, message)
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }
@@ -36,7 +36,7 @@ const sendFiles = async (req, res, next) => {
     const result = await messageService.sendFiles(userID, receiverId, files)
 
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }
@@ -69,7 +69,7 @@ const revokeMessage = (req, res, next) => {
     )
 
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }
@@ -83,7 +83,7 @@ const shareMessage = (req, res, next) => {
     const result = messageService.shareMessage(userID, receiverIds, messageID)
 
     //Có kết quả trả về client
-    res.status(StatusCodes.CREATED).json(result)
+    res.status(StatusCodes.OK).json(result)
   } catch (error) {
     next(error)
   }

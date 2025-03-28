@@ -42,7 +42,32 @@ const friendRequest = async (senderID, receiverID) => {
   }
 }
 
+const cancelFriendRequest = async (senderID, receiverID) => {
+  try {
+    if (senderID === receiverID) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'You can not cancel friend request to yourself'
+      )
+    }
+    const friendRequest = await friendModel.getFriend(senderID, receiverID)
+
+    if (!friendRequest) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friend request not found')
+    }
+
+    const result = await friendModel.cancelFriendRequest(senderID, receiverID)
+
+    if (result) {
+      return { msg: 'Friend request has been canceled' }
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 export const friendService = {
   getFriends,
-  friendRequest
+  friendRequest,
+  cancelFriendRequest
 }

@@ -55,8 +55,45 @@ const createFriendRequest = async (senderID, receiverID) => {
     throw error
   }
 }
+
+const getFriend = async (userID, friendID) => {
+  try {
+    const result = await dynamoClient
+      .get({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID,
+          friendID
+        }
+      })
+      .promise()
+    return result.Item
+  } catch (error) {
+    throw error
+  }
+}
+
+const cancelFriendRequest = async (senderID, receiverID) => {
+  try {
+    await dynamoClient
+      .delete({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID: senderID,
+          friendID: receiverID
+        }
+      })
+      .promise()
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
 export const friendModel = {
   FRIENDS_TABLE_NAME,
   getFriends,
-  createFriendRequest
+  createFriendRequest,
+  getFriend,
+  cancelFriendRequest
 }
