@@ -28,5 +28,15 @@ Router.route('/send/files/:receiverId').post(
 //   multerUploadMiddleware.upload.array('videos', 10),
 //   messageController.sendVideos
 // )
+Router.post(
+  '/revoke/:participantId',
+  authMiddleware.isAuthorized,
+  messageController.revokeMessage
+)
 
+Router.post(
+  '/share',
+  authMiddleware.isAuthorized,
+  messageController.shareMessage
+)
 export const messageRoutes = Router

@@ -1,4 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
+import { messageService } from '~/services/messageService'
 import { userService } from '~/services/userService'
 import ApiError from '~/utils/ApiError'
 
@@ -8,7 +9,7 @@ const sendMessage = async (req, res, next) => {
     const userID = req.jwtDecoded.userID
     const { message } = req.body
 
-    const result = await userService.sendMessage(userID, receiverId, message)
+    const result = await messageService.sendMessage(userID, receiverId, message)
     //Có kết quả trả về client
     res.status(StatusCodes.CREATED).json(result)
   } catch (error) {
@@ -33,7 +34,7 @@ const sendFiles = async (req, res, next) => {
     const userID = req.jwtDecoded.userID
     const files = req.files
 
-    const result = await userService.sendFiles(userID, receiverId, files)
+    const result = await messageService.sendFiles(userID, receiverId, files)
 
     //Có kết quả trả về client
     res.status(StatusCodes.CREATED).json(result)
@@ -56,9 +57,41 @@ const sendFiles = async (req, res, next) => {
 //   }
 // }
 
+const revokeMessage = (req, res, next) => {
+  try {
+    const { participantId } = req.params
+    const userID = req.jwtDecoded.userID
+    const { messageID } = req.body
+
+    const result = messageService.revokeMessage(
+      userID,
+      participantId,
+      messageID
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.CREATED).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const shareMessage = (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { messageID, receiverIds } = req.body
+
+    const result = messageService.shareMessage(userID, receiverIds, messageID)
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.CREATED).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const messageController = {
   sendMessage,
-  // sendImages,
-  sendFiles
-  // sendVideos
+  sendFiles,
+  revokeMessage,
+  shareMessage
 }
