@@ -102,10 +102,26 @@ const updateLastMessage = async (userID, userConversation) => {
     throw error
   }
 }
+
+const findConversationByID = async (conversationID) => {
+  try {
+    const params = {
+      TableName: CONVERSASION_TABLE_NAME,
+      Key: {
+        conversationID
+      }
+    }
+    const result = await dynamoClient.get(params).promise()
+    return result.Item
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const conversationModel = {
   CONVERSASION_TABLE_NAME,
   haveTheyChatted,
   createNewConversation,
   addUserToConversation,
-  updateLastMessage
+  updateLastMessage,
+  findConversationByID
 }

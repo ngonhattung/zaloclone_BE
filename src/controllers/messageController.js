@@ -89,9 +89,26 @@ const shareMessage = (req, res, next) => {
     next(error)
   }
 }
+
+const getMessagesByConversation = async (req, res, next) => {
+  try {
+    const { conversationID } = req.params
+
+    const result = await messageService.getMessagesByConversation(
+      conversationID
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const messageController = {
   sendMessage,
   sendFiles,
   revokeMessage,
-  shareMessage
+  shareMessage,
+  getMessagesByConversation
 }

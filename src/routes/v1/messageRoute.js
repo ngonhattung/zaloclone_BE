@@ -39,4 +39,9 @@ Router.post(
   authMiddleware.isAuthorized,
   messageController.shareMessage
 )
+Router.get(
+  '/conversation/:conversationID',
+  authMiddleware.isAuthorized,
+  messageController.getMessagesByConversation
+)
 export const messageRoutes = Router

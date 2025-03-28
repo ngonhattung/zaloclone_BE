@@ -65,9 +65,27 @@ const revokeMessage = async (messageID) => {
     throw new Error(error)
   }
 }
+
+const getMessagesByConversation = async (conversationID) => {
+  try {
+    const params = {
+      TableName: MESSAGE_TABLE_NAME,
+      IndexName: 'conversationID-index',
+      KeyConditionExpression: 'conversationID = :c',
+      ExpressionAttributeValues: {
+        ':c': conversationID
+      }
+    }
+    const result = await dynamoClient.query(params).promise()
+    return result.Items
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const messageModel = {
   MESSAGE_TABLE_NAME,
   createNewMessage,
   findMessageByID,
-  revokeMessage
+  revokeMessage,
+  getMessagesByConversation
 }

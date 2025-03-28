@@ -397,9 +397,29 @@ const shareMessage = async (userID, receiverIds, messageID) => {
   }
 }
 
+const getMessagesByConversation = async (conversationID) => {
+  try {
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Conversation not found')
+    }
+
+    const messages = await messageModel.getMessagesByConversation(
+      conversationID
+    )
+
+    return messages
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   sendMessage,
   sendFiles,
   revokeMessage,
-  shareMessage
+  shareMessage,
+  getMessagesByConversation
 }
