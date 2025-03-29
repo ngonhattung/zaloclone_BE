@@ -127,12 +127,61 @@ const acceptFriendRequest = async (senderID, receiverID) => {
     throw error
   }
 }
+const declineFriendRequest = async (senderID, receiverID) => {
+  try {
+    await dynamoClient
+      .delete({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID: senderID,
+          friendID: receiverID
+        }
+      })
+      .promise()
 
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
+const getFriendRequests = async (userID) => {
+  try {
+    const result = await dynamoClient
+      .query({
+        TableName: FRIENDS_TABLE_NAME,
+        KeyConditionExpression: 'friendID = :friendID',
+        FilterExpression: 'friendStatus = :status',
+        ExpressionAttributeValues: {
+          ':friendID': userID,
+          ':status': 'pending'
+        }
+      })
+      .promise()
+
+    const friendIDs = result.Items.map((item) => item.userID)
+    const friendsData = await dynamoClient
+      .batchGet({
+        RequestItems: {
+          [userModel.USER_TABLE_NAME]: {
+            Keys: friendIDs.map((id) => ({ userID: id })) // userID là khóa chính của bảng Users
+          }
+        }
+      })
+      .promise()
+
+    return friendsData.Responses[userModel.USER_TABLE_NAME] || []
+  } catch (error) {
+    throw error
+  }
+}
 export const friendModel = {
   FRIENDS_TABLE_NAME,
   getFriends,
   createFriendRequest,
   getFriend,
   cancelFriendRequest,
-  acceptFriendRequest
+  acceptFriendRequest,
+  declineFriendRequest,
+  getFriendRequests
 }

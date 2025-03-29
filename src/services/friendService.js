@@ -107,9 +107,44 @@ const acceptFriendRequest = async (senderID, receiverID) => {
     throw error
   }
 }
+
+const declineFriendRequest = async (senderID, receiverID) => {
+  try {
+    if (senderID === receiverID) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'You can not decline friend request from yourself'
+      )
+    }
+
+    const friendRequest = await friendModel.getFriend(senderID, receiverID)
+    if (!friendRequest) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friend request not found')
+    }
+
+    const result = await friendModel.declineFriendRequest(senderID, receiverID)
+
+    if (result) {
+      return { msg: 'Friend request has been declined' }
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
+const getFriendRequests = async (userID) => {
+  try {
+    const result = await friendModel.getFriendRequests(userID)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const friendService = {
   getFriends,
   friendRequest,
   cancelFriendRequest,
-  acceptFriendRequest
+  acceptFriendRequest,
+  declineFriendRequest,
+  getFriendRequests
 }

@@ -18,4 +18,19 @@ Router.route('/:receiverID/accept').get(
   authMiddleware.isAuthorized,
   friendController.acceptFriendRequest
 )
+
+Router.route('/:receiverID/decline').get(
+  authMiddleware.isAuthorized,
+  friendController.declineFriendRequest
+)
+
+Router.route('/requests').get(
+  authMiddleware.isAuthorized,
+  friendController.getFriendRequests
+)
+
+Router.route('/requests/sent').get(
+  authMiddleware.isAuthorized,
+  friendController.getSentFriendRequests
+)
 export const friendRoutes = Router
