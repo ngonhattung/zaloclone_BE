@@ -140,11 +140,21 @@ const getFriendRequests = async (userID) => {
     throw error
   }
 }
+
+const getSentFriendRequests = async (userID) => {
+  try {
+    const result = await friendModel.getSentFriendRequests(userID)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const friendService = {
   getFriends,
   friendRequest,
   cancelFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
-  getFriendRequests
+  getFriendRequests,
+  getSentFriendRequests
 }

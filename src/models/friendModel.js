@@ -175,6 +175,37 @@ const getFriendRequests = async (userID) => {
     throw error
   }
 }
+
+const getSentFriendRequests = async (userID) => {
+  try {
+    const result = await dynamoClient
+      .query({
+        TableName: FRIENDS_TABLE_NAME,
+        KeyConditionExpression: 'userID = :userID',
+        FilterExpression: 'friendStatus = :status',
+        ExpressionAttributeValues: {
+          ':userID': userID,
+          ':status': 'pending'
+        }
+      })
+      .promise()
+
+    const friendIDs = result.Items.map((item) => item.friendID)
+    const friendsData = await dynamoClient
+      .batchGet({
+        RequestItems: {
+          [userModel.USER_TABLE_NAME]: {
+            Keys: friendIDs.map((id) => ({ userID: id })) // userID là khóa chính của bảng Users
+          }
+        }
+      })
+      .promise()
+
+    return friendsData.Responses[userModel.USER_TABLE_NAME] || []
+  } catch (error) {
+    throw error
+  }
+}
 export const friendModel = {
   FRIENDS_TABLE_NAME,
   getFriends,
@@ -183,5 +214,6 @@ export const friendModel = {
   cancelFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
-  getFriendRequests
+  getFriendRequests,
+  getSentFriendRequests
 }
