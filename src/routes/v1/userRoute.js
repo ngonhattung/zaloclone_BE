@@ -11,7 +11,7 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
 })
 
 Router.route('/me').get(authMiddleware.isAuthorized, userController.getMe)
-Router.route('/:id').get(
+Router.route('/user/:id').get(
   authMiddleware.isAuthorized,
   userController.getUserById
 )
