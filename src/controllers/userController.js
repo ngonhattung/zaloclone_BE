@@ -108,6 +108,16 @@ const refreshToken = async (req, res, next) => {
     next(new ApiError(StatusCodes.UNAUTHORIZED, 'Please login!'))
   }
 }
+
+const searchUser = async (req, res, next) => {
+  try {
+    const phoneNumber = req.params.phoneNumber
+    const result = await userService.searchUser(phoneNumber)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const userController = {
   createNewUser,
   getUserById,
@@ -116,5 +126,6 @@ export const userController = {
   login,
   logout,
   refreshToken,
-  getMe
+  getMe,
+  searchUser
 }

@@ -5,7 +5,7 @@ import { env } from '~/config/environment'
 import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 import cookieParser from 'cookie-parser'
-import { app, server } from './config/socket'
+import { app, server } from './sockets/socket'
 
 //Fix Cache from disk của ExpressJS
 app.use((req, res, next) => {

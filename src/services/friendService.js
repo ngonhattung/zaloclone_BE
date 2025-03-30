@@ -2,7 +2,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { friendModel } from '~/models/friendModel'
 import { userModel } from '~/models/userModel'
-import { getUserSocketId, getReceiverSocketId, io } from '~/config/socket'
+import { getUserSocketId, getReceiverSocketId, io } from '~/sockets/socket.js'
 const getFriends = async (userID) => {
   try {
     const result = await friendModel.getFriends(userID)

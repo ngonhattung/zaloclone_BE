@@ -94,6 +94,8 @@ const cancelFriendRequest = async (senderID, receiverID) => {
 
 const acceptFriendRequest = async (senderID, receiverID) => {
   try {
+    console.log('senderID', senderID)
+    console.log('receiverID', receiverID)
     await dynamoClient
       .update({
         TableName: FRIENDS_TABLE_NAME,
@@ -150,8 +152,9 @@ const getFriendRequests = async (userID) => {
     const result = await dynamoClient
       .query({
         TableName: FRIENDS_TABLE_NAME,
-        KeyConditionExpression: 'friendID = :friendID',
-        FilterExpression: 'friendStatus = :status',
+        IndexName: 'friendID-index', // Chỉ mục phụ để tìm kiếm theo friendID
+        KeyConditionExpression:
+          'friendID = :friendID AND friendStatus = :status',
         ExpressionAttributeValues: {
           ':friendID': userID,
           ':status': 'pending'

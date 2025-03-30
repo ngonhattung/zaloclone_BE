@@ -16,6 +16,11 @@ Router.route('/:id').get(
   userController.getUserById
 )
 
+Router.route('/search/:phoneNumber').get(
+  authMiddleware.isAuthorized,
+  userController.searchUser
+)
+
 Router.route('/update').put(
   authMiddleware.isAuthorized,
   multerUploadMiddleware.upload.single('avatar'),

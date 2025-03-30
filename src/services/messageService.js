@@ -2,7 +2,7 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { conversationModel } from '~/models/conversationModel'
 import { messageModel } from '~/models/messageModel'
-import { getReceiverSocketId, getUserSocketId, io } from '~/config/socket'
+import { getReceiverSocketId, getUserSocketId, io } from '~/sockets/socket'
 import { S3Provider } from '~/providers/S3Provider'
 import { userModel } from '~/models/userModel'
 const sendMessage = async (userID, receiverId, message) => {

@@ -39,6 +39,17 @@ const getUserById = async (userID) => {
     throw error
   }
 }
+const searchUser = async (phoneNumber) => {
+  try {
+    const result = await userModel.findOneByPhoneNumber(phoneNumber)
+    if (!result) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+    }
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 
 const updateUser = async (userID, data, userAvatarFile) => {
   try {
@@ -156,5 +167,6 @@ export const userService = {
   updateUser,
   deleteUser,
   login,
-  refreshToken
+  refreshToken,
+  searchUser
 }

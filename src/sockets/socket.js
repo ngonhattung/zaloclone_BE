@@ -1,5 +1,5 @@
 import express from 'express'
-import { corsOptions } from './cors'
+import { corsOptions } from '~/config/cors.js'
 import http from 'http'
 import socketIo from 'socket.io'
 
