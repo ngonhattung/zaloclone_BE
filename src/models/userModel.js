@@ -181,6 +181,23 @@ const deleteUser = async (id) => {
     throw new Error(error)
   }
 }
+
+const getAllUsers = async () => {
+  try {
+    const params = {
+      TableName: USER_TABLE_NAME,
+      FilterExpression: 'destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': false
+      }
+    }
+    const result = await dynamoClient.scan(params).promise()
+    return result.Items
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const userModel = {
   USER_TABLE_NAME,
   USER_TABLE_SCHEMA,
@@ -189,5 +206,6 @@ export const userModel = {
   getUserById,
   updateUser,
   deleteUser,
-  findOneByPhoneNumber
+  findOneByPhoneNumber,
+  getAllUsers
 }

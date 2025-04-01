@@ -15,7 +15,10 @@ Router.route('/user/:id').get(
   authMiddleware.isAuthorized,
   userController.getUserById
 )
-
+Router.route('/all').get(
+  authMiddleware.isAuthorized,
+  userController.getAllUsers
+)
 Router.route('/search/:phoneNumber').get(
   authMiddleware.isAuthorized,
   userController.searchUser

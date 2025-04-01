@@ -161,6 +161,15 @@ const refreshToken = async (refreshToken) => {
     throw error
   }
 }
+
+const getAllUsers = async () => {
+  try {
+    const result = await userModel.getAllUsers()
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const userService = {
   createNewUser,
   getUserById,
@@ -168,5 +177,6 @@ export const userService = {
   deleteUser,
   login,
   refreshToken,
-  searchUser
+  searchUser,
+  getAllUsers
 }

@@ -118,6 +118,15 @@ const searchUser = async (req, res, next) => {
     next(error)
   }
 }
+
+const getAllUsers = async (req, res, next) => {
+  try {
+    const result = await userService.getAllUsers()
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const userController = {
   createNewUser,
   getUserById,
@@ -127,5 +136,6 @@ export const userController = {
   logout,
   refreshToken,
   getMe,
-  searchUser
+  searchUser,
+  getAllUsers
 }
