@@ -68,6 +68,10 @@ const getFriend = async (userID, friendID) => {
         }
       })
       .promise()
+
+    if (!result.Item) {
+      return null
+    }
     return result.Item
   } catch (error) {
     throw error
@@ -163,6 +167,9 @@ const getFriendRequests = async (userID) => {
       .promise()
 
     const friendIDs = result.Items.map((item) => item.userID)
+    if (!friendIDs || friendIDs.length === 0) {
+      return []
+    }
     const friendsData = await dynamoClient
       .batchGet({
         RequestItems: {
@@ -194,6 +201,11 @@ const getSentFriendRequests = async (userID) => {
       .promise()
 
     const friendIDs = result.Items.map((item) => item.friendID)
+
+    if (!friendIDs || friendIDs.length === 0) {
+      return []
+    }
+
     const friendsData = await dynamoClient
       .batchGet({
         RequestItems: {

@@ -6,6 +6,10 @@ import { getUserSocketId, getReceiverSocketId, io } from '~/sockets/socket.js'
 const getFriends = async (userID) => {
   try {
     const result = await friendModel.getFriends(userID)
+
+    if (result.length === 0 || !result) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friends not found')
+    }
     return result
   } catch (error) {
     throw error
@@ -135,6 +139,9 @@ const declineFriendRequest = async (senderID, receiverID) => {
 const getFriendRequests = async (userID) => {
   try {
     const result = await friendModel.getFriendRequests(userID)
+    if (result.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friend requests not found')
+    }
     return result
   } catch (error) {
     throw error
@@ -144,6 +151,13 @@ const getFriendRequests = async (userID) => {
 const getSentFriendRequests = async (userID) => {
   try {
     const result = await friendModel.getSentFriendRequests(userID)
+
+    if (result.length === 0) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        'Sent friend requests not found'
+      )
+    }
     return result
   } catch (error) {
     throw error
