@@ -39,4 +39,9 @@ Router.route('/requests/sent').get(
   authMiddleware.isAuthorized,
   friendController.getSentFriendRequests
 )
+Router.route('/remove/:friendID').get(
+  //xóa bạn bè
+  authMiddleware.isAuthorized,
+  friendController.removeFriend
+)
 export const friendRoutes = Router

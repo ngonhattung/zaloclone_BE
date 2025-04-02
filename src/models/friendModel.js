@@ -221,6 +221,34 @@ const getSentFriendRequests = async (userID) => {
     throw error
   }
 }
+
+const removeFriend = async (userID, friendID) => {
+  try {
+    await dynamoClient
+      .delete({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID: userID,
+          friendID: friendID
+        }
+      })
+      .promise()
+
+    await dynamoClient
+      .delete({
+        TableName: FRIENDS_TABLE_NAME,
+        Key: {
+          userID: friendID,
+          friendID: userID
+        }
+      })
+      .promise()
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
 export const friendModel = {
   FRIENDS_TABLE_NAME,
   getFriends,
@@ -230,5 +258,6 @@ export const friendModel = {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendRequests,
-  getSentFriendRequests
+  getSentFriendRequests,
+  removeFriend
 }

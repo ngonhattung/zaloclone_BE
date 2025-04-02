@@ -163,6 +163,30 @@ const getSentFriendRequests = async (userID) => {
     throw error
   }
 }
+
+const removeFriend = async (userID, friendID) => {
+  try {
+    if (userID === friendID) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'You can not remove yourself from friend list'
+      )
+    }
+
+    const friend = await friendModel.getFriend(userID, friendID)
+    if (!friend) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Friend not found')
+    }
+
+    const result = await friendModel.removeFriend(userID, friendID)
+
+    if (result) {
+      return { msg: 'Friend has been removed' }
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const friendService = {
   getFriends,
   friendRequest,
@@ -170,5 +194,6 @@ export const friendService = {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendRequests,
-  getSentFriendRequests
+  getSentFriendRequests,
+  removeFriend
 }

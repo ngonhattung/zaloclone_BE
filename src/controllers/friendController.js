@@ -90,6 +90,18 @@ const getSentFriendRequests = async (req, res, next) => {
     next(error)
   }
 }
+const removeFriend = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const friendID = req.params.friendID
+    const result = await friendService.removeFriend(userID, friendID)
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const friendController = {
   getFriends,
   friendRequest,
@@ -97,5 +109,6 @@ export const friendController = {
   acceptFriendRequest,
   declineFriendRequest,
   getFriendRequests,
-  getSentFriendRequests
+  getSentFriendRequests,
+  removeFriend
 }
