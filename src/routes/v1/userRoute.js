@@ -23,12 +23,19 @@ Router.route('/search/:phoneNumber').get(
   authMiddleware.isAuthorized,
   userController.searchUser
 )
+Router.route('/checkPhoneNumber/:phoneNumber').get(
+  userController.existPhoneNumber
+)
 
 Router.route('/update').put(
   authMiddleware.isAuthorized,
   multerUploadMiddleware.upload.single('avatar'),
   userValidation.update,
   userController.updateUser
+)
+Router.route('/forget-password').put(
+  userValidation.updatePassword,
+  userController.forgetPassword
 )
 
 Router.route('/delete').delete(

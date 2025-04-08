@@ -47,6 +47,25 @@ const updateUser = async (req, res, next) => {
     next(error)
   }
 }
+const forgetPassword = async (req, res, next) => {
+  try {
+    console.log('req.body', req.body)
+    const { newPassWord, phoneNumber } = req.body
+    const result = await userService.forgetPassword(phoneNumber, newPassWord)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+const existPhoneNumber = async (req, res, next) => {
+  try {
+    const phoneNumber = req.params.phoneNumber
+    const result = await userService.searchUser(phoneNumber)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 const deleteUser = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
@@ -137,5 +156,7 @@ export const userController = {
   refreshToken,
   getMe,
   searchUser,
-  getAllUsers
+  getAllUsers,
+  forgetPassword,
+  existPhoneNumber
 }

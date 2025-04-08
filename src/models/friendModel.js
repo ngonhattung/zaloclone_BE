@@ -10,7 +10,11 @@ const getFriends = async (userID) => {
       .query({
         TableName: FRIENDS_TABLE_NAME,
         KeyConditionExpression: 'userID = :userID',
-        ExpressionAttributeValues: { ':userID': userID }
+        FilterExpression: 'friendStatus = :acceptStatus',
+        ExpressionAttributeValues: {
+          ':userID': userID,
+          ':acceptStatus': 'accepted'
+        }
       })
       .promise()
 

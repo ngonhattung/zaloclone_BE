@@ -61,7 +61,6 @@ const login = async (req, res, next) => {
       .required(),
     passWord: Joi.string().min(6).max(50).required()
   })
-
   try {
     await schema.validateAsync(req.body, { abortEarly: false })
 
@@ -73,8 +72,33 @@ const login = async (req, res, next) => {
     )
   }
 }
+
+const updatePassword = async (req, res, next) => {
+  const schema = Joi.object({
+    phoneNumber: Joi.string().pattern(/^[0-9]{10,12}$/),
+    newPassWord: Joi.string().min(6).required(),
+    reNewPassWord: Joi.string()
+      .valid(Joi.ref('newPassWord'))
+      .required()
+      .messages({
+        'any.only': 'Mật khẩu xác nhận không khớp với mật khẩu mới'
+      })
+  })
+  try {
+    await schema.validateAsync(req.body, { abortEarly: false })
+
+    // Nếu không có lỗi thì chuyển hướng sang controller
+    next()
+  } catch (error) {
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
+  }
+}
+
 export const userValidation = {
   validateUser,
   login,
-  update
+  update,
+  updatePassword
 }

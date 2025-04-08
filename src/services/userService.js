@@ -87,7 +87,21 @@ const updateUser = async (userID, data, userAvatarFile) => {
     throw error
   }
 }
-
+const forgetPassword = async (phoneNumber, newPassWord) => {
+  try {
+    const user = await userModel.findOneByPhoneNumber(phoneNumber)
+    if (!user) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+    }
+    const hashedPassword = bcryptjs.hashSync(newPassWord, 8)
+    const result = await userModel.updateUser(user.userID, {
+      passWord: hashedPassword
+    })
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 const deleteUser = async (userID) => {
   try {
     const user = await userModel.findOneById(userID)
@@ -178,5 +192,6 @@ export const userService = {
   login,
   refreshToken,
   searchUser,
-  getAllUsers
+  getAllUsers,
+  forgetPassword
 }
