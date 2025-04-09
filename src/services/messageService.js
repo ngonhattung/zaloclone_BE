@@ -283,6 +283,32 @@ const revokeMessage = async (userID, participantId, messageID) => {
   }
 }
 
+const deleteMessage = async (userID, messageID) => {
+  try {
+    const message = await messageModel.findMessageByID(messageID)
+
+    if (!message) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        'Message not found. Cannot delete message'
+      )
+    }
+
+    if (message.senderID !== userID) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'You are not authorized to delete this message'
+      )
+    }
+
+    await messageModel.deleteMessage(userID, messageID)
+
+    return { msg: 'Message deleted successfully' }
+  } catch (error) {
+    throw error
+  }
+}
+
 const shareMessage = async (userID, receiverIds, messageID) => {
   try {
     const message = await messageModel.findMessageByID(messageID)
@@ -438,5 +464,6 @@ export const messageService = {
   sendFiles,
   revokeMessage,
   shareMessage,
-  getMessagesByConversation
+  getMessagesByConversation,
+  deleteMessage
 }

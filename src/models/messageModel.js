@@ -66,6 +66,27 @@ const revokeMessage = async (messageID) => {
   }
 }
 
+const deleteMessage = async (userID, messageID) => {
+  try {
+    const params = {
+      TableName: MESSAGE_TABLE_NAME,
+      Key: { messageID },
+      UpdateExpression: 'set revoke = :revoke',
+      ExpressionAttributeValues: {
+        ':revoke': true,
+        ':senderID': userID
+      },
+      ConditionExpression: 'senderID = :senderID',
+      ReturnValues: 'UPDATED_NEW'
+    }
+
+    const result = await dynamoClient.update(params).promise()
+    return result.Attributes
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const getMessagesByConversation = async (conversationID) => {
   try {
     const params = {
@@ -87,5 +108,6 @@ export const messageModel = {
   createNewMessage,
   findMessageByID,
   revokeMessage,
-  getMessagesByConversation
+  getMessagesByConversation,
+  deleteMessage
 }

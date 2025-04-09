@@ -75,6 +75,20 @@ const revokeMessage = (req, res, next) => {
   }
 }
 
+const deleteMessage = (req, res, next) => {
+  try {
+    const { messageID } = req.body
+    const userID = req.jwtDecoded.userID
+
+    const result = messageService.deleteMessage(userID, messageID)
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 const shareMessage = (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
@@ -109,5 +123,6 @@ export const messageController = {
   sendFiles,
   revokeMessage,
   shareMessage,
-  getMessagesByConversation
+  getMessagesByConversation,
+  deleteMessage
 }

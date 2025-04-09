@@ -10,6 +10,7 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
 })
 
 Router.route('/send/:receiverId').post(
+  //gửi tin nhắn text
   authMiddleware.isAuthorized,
   messageController.sendMessage
 )
@@ -19,6 +20,7 @@ Router.route('/send/:receiverId').post(
 //   messageController.sendImages
 // )
 Router.route('/send/files/:receiverId').post(
+  //gửi tin nhắn files
   authMiddleware.isAuthorized,
   multerUploadMiddleware.upload.array('files', 10),
   messageController.sendFiles
@@ -29,12 +31,21 @@ Router.route('/send/files/:receiverId').post(
 //   messageController.sendVideos
 // )
 Router.post(
+  // thu hồi tin nhắn
   '/revoke/:participantId',
   authMiddleware.isAuthorized,
   messageController.revokeMessage
 )
 
 Router.post(
+  // xóa tin nhắn
+  '/delete',
+  authMiddleware.isAuthorized,
+  messageController.deleteMessage
+)
+
+Router.post(
+  //chuyển tiếp tin nhắn
   '/share',
   authMiddleware.isAuthorized,
   messageController.shareMessage
