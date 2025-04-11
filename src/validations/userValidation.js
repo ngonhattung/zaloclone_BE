@@ -96,9 +96,28 @@ const updatePassword = async (req, res, next) => {
   }
 }
 
+const updatePasswordNew = async (req, res, next) => {
+  const schema = Joi.object({
+    currentPassWord: Joi.string().min(6).required(),
+    newPassWord: Joi.string().valid(Joi.ref('newPassWord')).required(),
+    reNewPassWord: Joi.string().valid(Joi.ref('newPassWord')).required()
+  })
+  try {
+    await schema.validateAsync(req.body, { abortEarly: false })
+
+    // Nếu không có lỗi thì chuyển hướng sang controller
+    next()
+  } catch (error) {
+    next(
+      new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message)
+    )
+  }
+}
+
 export const userValidation = {
   validateUser,
   login,
   update,
-  updatePassword
+  updatePassword,
+  updatePasswordNew
 }

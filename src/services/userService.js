@@ -102,6 +102,24 @@ const forgetPassword = async (phoneNumber, newPassWord) => {
     throw error
   }
 }
+
+const updatePassword = async (userId, currentPassWord, newPassWord) => {
+  const user = await userModel.findOneById(userId)
+
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+  }
+
+  if (!(await bcryptjs.compare(currentPassWord, user.passWord))) {
+    throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Current password is incorrect')
+  }
+
+  const hashedPassword = bcryptjs.hashSync(newPassWord, 8)
+  const result = await userModel.updateUser(user.userID, {
+    passWord: hashedPassword
+  })
+  return result
+}
 const deleteUser = async (userID) => {
   try {
     const user = await userModel.findOneById(userID)
@@ -193,5 +211,6 @@ export const userService = {
   refreshToken,
   searchUser,
   getAllUsers,
-  forgetPassword
+  forgetPassword,
+  updatePassword
 }
