@@ -35,7 +35,25 @@ const inviteGroup = async (req, res, next) => {
     next(error)
   }
 }
+const leaveGroup = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { groupID, conversationID } = req.body // mảng id của các thành viên trong nhóm
+
+    const result = await groupService.leaveGroup(
+      userID,
+      groupID,
+      conversationID
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
-  inviteGroup
+  inviteGroup,
+  leaveGroup
 }

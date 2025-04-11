@@ -117,10 +117,28 @@ const findGroupMembersByID = async (groupID) => {
     throw new Error(error)
   }
 }
+
+const leaveGroup = async (userID, groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: {
+        groupID,
+        memberID: userID
+      }
+    }
+
+    await dynamoClient.delete(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const groupModel = {
   create,
   createGroupMembers,
   addMembers,
   findGroupByID,
-  findGroupMembersByID
+  findGroupMembersByID,
+  leaveGroup
 }

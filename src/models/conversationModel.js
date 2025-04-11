@@ -297,6 +297,23 @@ const addMembers = async (conversationID, members) => {
     throw error
   }
 }
+
+const leaveGroup = async (userID, conversationID) => {
+  try {
+    const params = {
+      TableName: USERCONVERSATION_TABLE_NAME,
+      Key: {
+        userID: userID,
+        conversationID: conversationID
+      }
+    }
+
+    await dynamoClient.delete(params).promise()
+    return { message: 'Left group successfully' }
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationModel = {
   CONVERSATION_TABLE_NAME,
   haveTheyChatted,
@@ -307,5 +324,6 @@ export const conversationModel = {
   getConversations,
   getConversationByName,
   addMembers,
-  createUserConversationGroup
+  createUserConversationGroup,
+  leaveGroup
 }

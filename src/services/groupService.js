@@ -118,7 +118,61 @@ const inviteGroup = async (groupID, members, conversationID) => {
   }
 }
 
+const leaveGroup = async (userID, groupID, conversationID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    const userConversation = await conversationModel.leaveGroup(
+      conversation.conversationID,
+      userID
+    )
+    if (!userConversation) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Rời nhóm thất bại vào cuộc trò chuyện'
+      )
+    }
+
+    const result = await groupModel.leaveGroup(groupID, userID)
+    if (!result) {
+      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
+    }
+
+    //gửi thông báo tới người rời nhóm
+    const removeParticipantSocketId = getReceiverSocketId(userID)
+    if (removeParticipantSocketId) {
+      io.to(removeParticipantSocketId).emit('delConversation', conversation)
+      io.to(removeParticipantSocketId).emit('remove')
+    }
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId && member.memberID !== userID) {
+        io.to(participantSocketId).emit('updateGroupChat', conversation)
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
+    return {
+      msg: conversation
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
-  inviteGroup
+  inviteGroup,
+  leaveGroup
 }
