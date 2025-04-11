@@ -29,11 +29,11 @@ Router.post(
 //   groupController.revokeAdmin
 // ) // thu hồi quyền admin
 
-// Router.route('/messages/send/:conversationId').post(
-//   //gửi tin nhắn text
-//   authMiddleware.isAuthorized,
-//   groupController.sendMessage
-// )
+Router.route('/messages/send/:conversationId').post(
+  //gửi tin nhắn text
+  authMiddleware.isAuthorized,
+  groupController.sendMessage
+)
 
 // Router.route('/messages/send/files/:conversationId').post(
 //   //gửi tin nhắn files

@@ -98,11 +98,29 @@ const grantAdmin = async (req, res, next) => {
     next(error)
   }
 }
+
+const sendMessage = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { message, conversationId, groupID } = req.body
+    const result = await groupService.sendMessage(
+      userID,
+      conversationId,
+      message,
+      groupID
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
   inviteGroup,
   leaveGroup,
   kickMember,
   deleteGroup,
-  grantAdmin
+  grantAdmin,
+  sendMessage
 }

@@ -162,23 +162,13 @@ const deleteGroup = async (groupID) => {
   }
 }
 
-const grantAdmin = async (userID, groupID, memberID) => {
+const grantAdmin = async (groupID, memberID) => {
   try {
     const promoteParams = {
       TableName: GROUP_MEMBER_TABLE_NAME,
       Key: { groupID, memberID },
       UpdateExpression: 'set role = :role',
       ExpressionAttributeValues: { ':role': 'admin' }
-    }
-
-    if (userID !== memberID) {
-      const demoteParams = {
-        TableName: GROUP_MEMBER_TABLE_NAME,
-        Key: { groupID, memberID: userID },
-        UpdateExpression: 'set role = :role',
-        ExpressionAttributeValues: { ':role': 'member' }
-      }
-      await dynamoClient.update(demoteParams).promise()
     }
 
     await dynamoClient.update(promoteParams).promise()

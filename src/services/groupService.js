@@ -6,6 +6,7 @@ import { messageModel } from '~/models/messageModel'
 import { getReceiverSocketId, getUserSocketId, io } from '~/sockets/socket'
 import { S3Provider } from '~/providers/S3Provider'
 import { userModel } from '~/models/userModel'
+import e from 'express'
 
 const createGroup = async (userID, groupName, groupAvatar, members) => {
   try {
@@ -136,13 +137,17 @@ const leaveGroup = async (userID, groupID, conversationID) => {
     }
 
     // Kiểm tra quyền admin
-    const isAdmin = groupMembers.some(
-      (member) => member.memberID === userID && member.role === 'admin'
+    const adminMembers = groupMembers.filter(
+      (member) => member.role === 'admin'
     )
-    if (!isAdmin) {
+
+    const isOnlyAdmin =
+      adminMembers.length === 1 && adminMembers[0].memberID === userID
+
+    if (isOnlyAdmin) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'Bạn không thể rời nhóm khi là admin'
+        'Bạn không thể rời nhóm vì bạn là admin duy nhất'
       )
     }
 
@@ -341,7 +346,7 @@ const grantAdmin = async (userID, participantId, groupID) => {
       )
     }
 
-    const result = await groupModel.grantAdmin(userID, participantId, groupID)
+    const result = await groupModel.grantAdmin(participantId, groupID)
     if (!result) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -365,11 +370,70 @@ const grantAdmin = async (userID, participantId, groupID) => {
     throw error
   }
 }
+
+const sendMessage = async (userID, conversationID, message, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    } else if (conversation.type !== 'group') {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cuộc trò chuyện không phải là nhóm'
+      )
+    } else if (conversation.isDestroy) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
+    }
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: message,
+      type: 'text'
+    }
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+    const userConversation = {
+      conversationID: conversation.conversationID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    const updateLastMessagePromise = groupMembers.map((member) =>
+      conversationModel.updateLastMessage(member.memberID, userConversation)
+    )
+
+    await Promise.all(updateLastMessagePromise)
+
+    // gửi thông báo cho các thành viên trong nhóm
+    io.to(conversation.conversationID).emit('newMessageGroup', {
+      message: createNewMessage,
+      conversationID: conversation.conversationID
+    })
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+    return {
+      msg: messageData
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
   leaveGroup,
   kickMember,
   deleteGroup,
-  grantAdmin
+  grantAdmin,
+  sendMessage
 }
