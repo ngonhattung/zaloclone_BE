@@ -12,12 +12,27 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
 Router.post('/create', authMiddleware.isAuthorized, groupController.createGroup) // tạo nhóm
 Router.post('/invite', authMiddleware.isAuthorized, groupController.inviteGroup) // mời vào nhóm
 Router.post('/leave', authMiddleware.isAuthorized, groupController.leaveGroup) // rời nhóm
+Router.post(
+  '/kick-member',
+  authMiddleware.isAuthorized,
+  groupController.kickMember
+) // kích ra khỏi nhóm
 // Router.post('/delete', authMiddleware.isAuthorized, groupController.deleteGroup) // giải tán nhóm
 // Router.post(
 //   '/kick-member',
 //   authMiddleware.isAuthorized,
 //   groupController.kickMember
-// ) // mời ra khỏi nhóm
+// ) // kích ra khỏi nhóm
+// Router.post(
+//   '/kick-member',
+//   authMiddleware.isAuthorized,
+//   groupController.kickMember
+// ) // kích ra khỏi nhóm
+// Router.post(
+//   '/kick-member',
+//   authMiddleware.isAuthorized,
+//   groupController.kickMember
+// ) // kích ra khỏi nhóm
 // Router.post(
 //   '/admin/grant',
 //   authMiddleware.isAuthorized,

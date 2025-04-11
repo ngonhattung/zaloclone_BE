@@ -125,6 +125,15 @@ const leaveGroup = async (userID, groupID, conversationID) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
+    // kiểm tra xem người dùng có phải là admin không
+    groupMembers.forEach((member) => {
+      if (member.memberID === userID && member.role === 'admin') {
+        throw new ApiError(
+          StatusCodes.FORBIDDEN,
+          'Bạn không thể rời nhóm khi là admin'
+        )
+      }
+    })
     const conversation = await conversationModel.findConversationByID(
       conversationID
     )
@@ -143,7 +152,7 @@ const leaveGroup = async (userID, groupID, conversationID) => {
       )
     }
 
-    const result = await groupModel.leaveGroup(groupID, userID)
+    const result = await groupModel.leaveGroup(userID, groupID)
     if (!result) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
     }
@@ -171,8 +180,75 @@ const leaveGroup = async (userID, groupID, conversationID) => {
     throw error
   }
 }
+
+const kickMember = async (userID, groupID, conversationID, memberID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    // kiểm tra xem người dùng có phải là admin không
+    groupMembers.forEach((member) => {
+      if (member.memberID === userID && member.role === 'admin') {
+        throw new ApiError(
+          StatusCodes.FORBIDDEN,
+          'Bạn không thể kích thành viên nếu không phải là admin'
+        )
+      }
+    })
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    const userConversation = await conversationModel.leaveGroup({
+      conversationID: conversation.conversationID,
+      userID: memberID
+    })
+    if (!userConversation) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Rời nhóm thất bại vào cuộc trò chuyện'
+      )
+    }
+
+    const result = await groupModel.leaveGroup({
+      userID: memberID,
+      groupID
+    })
+    if (!result) {
+      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
+    }
+
+    //gửi thông báo tới người rời nhóm
+    const removeParticipantSocketId = getReceiverSocketId(memberID)
+    if (removeParticipantSocketId) {
+      io.to(removeParticipantSocketId).emit('delConversation', conversation)
+      io.to(removeParticipantSocketId).emit('remove')
+    }
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId && member.memberID !== memberID) {
+        io.to(participantSocketId).emit('updateGroupChat', conversation)
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
+    return {
+      msg: conversation
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
-  leaveGroup
+  leaveGroup,
+  kickMember
 }
