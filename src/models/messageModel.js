@@ -93,8 +93,10 @@ const getMessagesByConversation = async (conversationID) => {
       TableName: MESSAGE_TABLE_NAME,
       IndexName: 'conversationID-index',
       KeyConditionExpression: 'conversationID = :c',
+      FilterExpression: 'destroy = :d',
       ExpressionAttributeValues: {
-        ':c': conversationID
+        ':c': conversationID,
+        ':d': false
       }
     }
     const result = await dynamoClient.query(params).promise()

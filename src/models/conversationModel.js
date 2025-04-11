@@ -48,6 +48,7 @@ const createNewConversation = async (fullName, conversationType) => {
       conversationID,
       conversationType: conversationType,
       conversationName: fullName,
+      destroy: false,
       createdAt: Date.now(),
       updatedAt: null
     }
@@ -73,6 +74,7 @@ const addUserToConversation = async (userID, userConversation) => {
         userID: userID,
         conversationID: userConversation.conversationID,
         lastMessageID: userConversation.lastMessage,
+        destroy: false,
         createdAt: Date.now(),
         updatedAt: null
       }
@@ -246,6 +248,7 @@ const createUserConversationGroup = async (userID, conversationID, members) => {
                 userID: userID,
                 conversationID: conversationID,
                 lastMessageID: null,
+                destroy: false,
                 createdAt: Date.now(),
                 updatedAt: null
               }
@@ -257,6 +260,7 @@ const createUserConversationGroup = async (userID, conversationID, members) => {
                 userID: member,
                 conversationID: conversationID,
                 lastMessageID: null,
+                destroy: false,
                 createdAt: Date.now(),
                 updatedAt: null
               }
@@ -283,6 +287,7 @@ const addMembers = async (conversationID, members) => {
               userID: member,
               conversationID: conversationID,
               lastMessageID: null,
+              destroy: false,
               createdAt: Date.now(),
               updatedAt: null
             }
@@ -297,6 +302,26 @@ const addMembers = async (conversationID, members) => {
     throw error
   }
 }
+
+const leaveGroup = async (userID, conversationID) => {
+  try {
+    const params = {
+      TableName: USERCONVERSATION_TABLE_NAME,
+      Key: {
+        userID: userID,
+        conversationID: conversationID
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
+      }
+    }
+    await dynamoClient.update(params).promise()
+    return { message: 'Left group successfully' }
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationModel = {
   CONVERSATION_TABLE_NAME,
   haveTheyChatted,
@@ -307,5 +332,6 @@ export const conversationModel = {
   getConversations,
   getConversationByName,
   addMembers,
-  createUserConversationGroup
+  createUserConversationGroup,
+  leaveGroup
 }

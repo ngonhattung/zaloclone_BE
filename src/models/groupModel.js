@@ -15,7 +15,8 @@ const create = async (groupName, groupAvatar) => {
       groupName,
       groupAvatar,
       createdAt: Date.now(),
-      updatedAt: null
+      updatedAt: null,
+      destroy: false
     }
 
     const params = {
@@ -43,7 +44,8 @@ const createGroupMembers = async (userID, groupID, members) => {
                 memberID: member,
                 role: member === userID ? 'admin' : 'member',
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: null,
+                destroy: false
               }
             }
           }
@@ -70,7 +72,8 @@ const addMembers = async (groupID, members) => {
                 memberID: member,
                 role: 'member',
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: null,
+                destroy: false
               }
             }
           }
@@ -117,10 +120,70 @@ const findGroupMembersByID = async (groupID) => {
     throw new Error(error)
   }
 }
+
+const leaveGroup = async (userID, groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: {
+        groupID,
+        memberID: userID
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
+      }
+    }
+
+    await dynamoClient.update(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const deleteGroup = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_TABLE_NAME,
+      Key: {
+        groupID
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
+      }
+    }
+
+    await dynamoClient.update(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const grantAdmin = async (groupID, memberID) => {
+  try {
+    const promoteParams = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: { groupID, memberID },
+      UpdateExpression: 'set role = :role',
+      ExpressionAttributeValues: { ':role': 'admin' }
+    }
+
+    await dynamoClient.update(promoteParams).promise()
+    return true
+  } catch (error) {
+    throw new Error(`grantAdmin error: ${error.message}`)
+  }
+}
 export const groupModel = {
   create,
   createGroupMembers,
   addMembers,
   findGroupByID,
-  findGroupMembersByID
+  findGroupMembersByID,
+  leaveGroup,
+  deleteGroup,
+  grantAdmin
 }

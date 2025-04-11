@@ -99,7 +99,7 @@ const updatePassword = async (req, res, next) => {
 const updatePasswordNew = async (req, res, next) => {
   const schema = Joi.object({
     currentPassWord: Joi.string().min(6).required(),
-    newPassWord: Joi.string().valid(Joi.ref('newPassWord')).required(),
+    newPassWord: Joi.string().min(6).required(),
     reNewPassWord: Joi.string().valid(Joi.ref('newPassWord')).required()
   })
   try {

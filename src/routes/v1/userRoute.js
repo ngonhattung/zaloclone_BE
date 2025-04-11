@@ -38,6 +38,7 @@ Router.route('/forget-password').put(
   userController.forgetPassword
 )
 Router.route('/update-password').put(
+  authMiddleware.isAuthorized,
   userValidation.updatePasswordNew,
   userController.updatePassword
 )
