@@ -42,19 +42,19 @@ Router.route('/messages/send/files/:conversationId').post(
   groupController.sendFiles
 )
 
-// Router.post(
-//   // thu hồi tin nhắn
-//   '/messages/revoke',
-//   authMiddleware.isAuthorized,
-//   groupController.revokeMessage
-// )
+Router.post(
+  // thu hồi tin nhắn
+  '/messages/revoke',
+  authMiddleware.isAuthorized,
+  groupController.revokeMessage
+)
 
-// Router.post(
-//   // xóa tin nhắn
-//   '/messages/delete',
-//   authMiddleware.isAuthorized,
-//   groupController.deleteMessage
-// )
+Router.post(
+  // xóa tin nhắn
+  '/messages/delete',
+  authMiddleware.isAuthorized,
+  groupController.deleteMessage
+)
 
 // Router.post(
 //   //chuyển tiếp tin nhắn
