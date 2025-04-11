@@ -5,8 +5,6 @@ import { groupModel } from '~/models/groupModel.js'
 import { messageModel } from '~/models/messageModel'
 import { getReceiverSocketId, getUserSocketId, io } from '~/sockets/socket'
 import { S3Provider } from '~/providers/S3Provider'
-import { userModel } from '~/models/userModel'
-import e from 'express'
 
 const createGroup = async (userID, groupName, groupAvatar, members) => {
   try {
@@ -428,6 +426,82 @@ const sendMessage = async (userID, conversationID, message, groupID) => {
     throw error
   }
 }
+
+const sendFiles = async (userID, conversationID, files, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    } else if (conversation.type !== 'group') {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cuộc trò chuyện không phải là nhóm'
+      )
+    } else if (conversation.isDestroy) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
+    }
+
+    const saveMessage = async (result) => {
+      try {
+        const fileParts = result.originalname.split('.')
+        const fileType =
+          fileParts.length > 1 ? fileParts[fileParts.length - 1] : 'unknown'
+
+        const messageData = {
+          conversationID: conversation.conversationID,
+          senderID: userID,
+          content: result.originalname,
+          url: result.Location,
+          type: fileType
+        }
+
+        return await messageModel.createNewMessage(messageData)
+      } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, error)
+      }
+    }
+
+    const promiseUpload = files.map((file) =>
+      S3Provider.streamUpload(file, userID)
+    )
+
+    const uploadResults = await Promise.all(promiseUpload)
+    const messageResults = await Promise.all(uploadResults.map(saveMessage))
+
+    if (messageResults) {
+      const userConversation = {
+        conversationID: conversation.conversationID,
+        lastMessage: messageResults[messageResults.length - 1].messageID
+      }
+
+      const updateLastMessagePromise = groupMembers.map((member) =>
+        conversationModel.updateLastMessage(member.memberID, userConversation)
+      )
+      await Promise.all(updateLastMessagePromise)
+
+      // gửi thông báo cho các thành viên trong nhóm
+      io.to(conversation.conversationID).emit('newMessageGroup', {
+        message: messageResults,
+        conversationID: conversation.conversationID
+      })
+      groupMembers.forEach((member) => {
+        const participantSocketId = getReceiverSocketId(member.memberID)
+        if (participantSocketId) {
+          io.to(participantSocketId).emit('notification')
+        }
+      })
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
@@ -435,5 +509,6 @@ export const messageService = {
   kickMember,
   deleteGroup,
   grantAdmin,
-  sendMessage
+  sendMessage,
+  sendFiles
 }

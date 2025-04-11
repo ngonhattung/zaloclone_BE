@@ -35,12 +35,12 @@ Router.route('/messages/send/:conversationId').post(
   groupController.sendMessage
 )
 
-// Router.route('/messages/send/files/:conversationId').post(
-//   //gửi tin nhắn files
-//   authMiddleware.isAuthorized,
-//   multerUploadMiddleware.upload.array('files', 10),
-//   groupController.sendFiles
-// )
+Router.route('/messages/send/files/:conversationId').post(
+  //gửi tin nhắn files
+  authMiddleware.isAuthorized,
+  multerUploadMiddleware.upload.array('files', 10),
+  groupController.sendFiles
+)
 
 // Router.post(
 //   // thu hồi tin nhắn
