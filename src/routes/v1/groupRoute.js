@@ -17,7 +17,7 @@ Router.post(
   authMiddleware.isAuthorized,
   groupController.kickMember
 ) // kích ra khỏi nhóm
-// Router.post('/delete', authMiddleware.isAuthorized, groupController.deleteGroup) // giải tán nhóm
+Router.post('/delete', authMiddleware.isAuthorized, groupController.deleteGroup) // giải tán nhóm
 // Router.post(
 //   '/kick-member',
 //   authMiddleware.isAuthorized,

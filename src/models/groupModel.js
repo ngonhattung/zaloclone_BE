@@ -15,7 +15,8 @@ const create = async (groupName, groupAvatar) => {
       groupName,
       groupAvatar,
       createdAt: Date.now(),
-      updatedAt: null
+      updatedAt: null,
+      destroy: false
     }
 
     const params = {
@@ -43,7 +44,8 @@ const createGroupMembers = async (userID, groupID, members) => {
                 memberID: member,
                 role: member === userID ? 'admin' : 'member',
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: null,
+                destroy: false
               }
             }
           }
@@ -70,7 +72,8 @@ const addMembers = async (groupID, members) => {
                 memberID: member,
                 role: 'member',
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: null,
+                destroy: false
               }
             }
           }
@@ -125,10 +128,34 @@ const leaveGroup = async (userID, groupID) => {
       Key: {
         groupID,
         memberID: userID
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
       }
     }
 
-    await dynamoClient.delete(params).promise()
+    await dynamoClient.update(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const deleteGroup = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_TABLE_NAME,
+      Key: {
+        groupID
+      },
+      UpdateExpression: 'set destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': true
+      }
+    }
+
+    await dynamoClient.update(params).promise()
     return true
   } catch (error) {
     throw new Error(error)
@@ -140,5 +167,6 @@ export const groupModel = {
   addMembers,
   findGroupByID,
   findGroupMembersByID,
-  leaveGroup
+  leaveGroup,
+  deleteGroup
 }

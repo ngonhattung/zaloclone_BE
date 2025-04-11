@@ -73,8 +73,11 @@ const inviteGroup = async (groupID, members, conversationID) => {
     const conversation = await conversationModel.findConversationByID(
       conversationID
     )
-    // thêm thành viên vào nhóm
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
 
+    // thêm thành viên vào nhóm
     const userConversation = await conversationModel.addMembers(
       conversation.conversationID,
       members
@@ -125,20 +128,22 @@ const leaveGroup = async (userID, groupID, conversationID) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    // kiểm tra xem người dùng có phải là admin không
-    groupMembers.forEach((member) => {
-      if (member.memberID === userID && member.role === 'admin') {
-        throw new ApiError(
-          StatusCodes.FORBIDDEN,
-          'Bạn không thể rời nhóm khi là admin'
-        )
-      }
-    })
     const conversation = await conversationModel.findConversationByID(
       conversationID
     )
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.memberID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể rời nhóm khi là admin'
+      )
     }
 
     const userConversation = await conversationModel.leaveGroup(
@@ -188,20 +193,22 @@ const kickMember = async (userID, groupID, conversationID, memberID) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    // kiểm tra xem người dùng có phải là admin không
-    groupMembers.forEach((member) => {
-      if (member.memberID === userID && member.role === 'admin') {
-        throw new ApiError(
-          StatusCodes.FORBIDDEN,
-          'Bạn không thể kích thành viên nếu không phải là admin'
-        )
-      }
-    })
     const conversation = await conversationModel.findConversationByID(
       conversationID
     )
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.memberID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể giải tán nhóm khi không phải là admin'
+      )
     }
 
     const userConversation = await conversationModel.leaveGroup({
@@ -246,9 +253,79 @@ const kickMember = async (userID, groupID, conversationID, memberID) => {
     throw error
   }
 }
+
+const deleteGroup = async (userID, groupID, conversationID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.memberID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể giải tán nhóm khi không phải là admin'
+      )
+    }
+
+    // Xóa thành viên khỏi nhóm bằng Promise.all
+    const leaveGroupPromises = groupMembers.map((member) =>
+      conversationModel.leaveGroup({
+        conversationID: conversation.conversationID,
+        userID: member.memberID
+      })
+    )
+
+    const leaveResults = await Promise.all(leaveGroupPromises)
+
+    // Kiểm tra kết quả
+    if (leaveResults.includes(null)) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Một số thành viên không thể rời nhóm'
+      )
+    }
+
+    // Xóa nhóm
+    const result = await groupModel.deleteGroup(userID, groupID)
+    if (!result) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Giải tán nhóm thất bại'
+      )
+    }
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId && member.memberID) {
+        io.to(participantSocketId).emit('delConversation', conversation)
+        io.to(participantSocketId).emit('remove')
+      }
+    })
+
+    return {
+      msg: conversation
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
   leaveGroup,
-  kickMember
+  kickMember,
+  deleteGroup
 }
