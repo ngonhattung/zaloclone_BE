@@ -33,6 +33,11 @@ Router.route('/update').put(
   userValidation.update,
   userController.updateUser
 )
+Router.route('/update-avatar').put(
+  authMiddleware.isAuthorized,
+  multerUploadMiddleware.upload.single('avatar'),
+  userController.updateAvatarUser
+)
 Router.route('/forget-password').put(
   userValidation.updatePassword,
   userController.forgetPassword

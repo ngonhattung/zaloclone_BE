@@ -87,6 +87,21 @@ const updateUser = async (userID, data, userAvatarFile) => {
     throw error
   }
 }
+
+const updateAvatarUser = async (userID, userAvatarFile) => {
+  const user = await userModel.findOneById(userID)
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+  }
+
+  const uploadResult = await S3Provider.streamUpload(userAvatarFile, userID)
+  const updateUser = await userModel.updateUser(userID, {
+    avatar: uploadResult.Location
+  })
+
+  return pickUser(updateUser)
+}
+
 const forgetPassword = async (phoneNumber, newPassWord) => {
   try {
     const user = await userModel.findOneByPhoneNumber(phoneNumber)
@@ -212,5 +227,6 @@ export const userService = {
   searchUser,
   getAllUsers,
   forgetPassword,
-  updatePassword
+  updatePassword,
+  updateAvatarUser
 }

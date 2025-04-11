@@ -47,6 +47,18 @@ const updateUser = async (req, res, next) => {
     next(error)
   }
 }
+
+const updateAvatarUser = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const userAvatarFile = req.file
+    const result = await userService.updateAvatarUser(userID, userAvatarFile)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 const forgetPassword = async (req, res, next) => {
   try {
     console.log('req.body', req.body)
@@ -175,5 +187,6 @@ export const userController = {
   getAllUsers,
   forgetPassword,
   existPhoneNumber,
-  updatePassword
+  updatePassword,
+  updateAvatarUser
 }
