@@ -234,6 +234,45 @@ const getConversationByName = async (conversationName) => {
 }
 
 //Group
+
+const createUserConversationGroup = async (userID, conversationID, members) => {
+  try {
+    const params = {
+      RequestItems: {
+        [USERCONVERSATION_TABLE_NAME]: [
+          {
+            PutRequest: {
+              Item: {
+                userID: userID,
+                conversationID: conversationID,
+                lastMessageID: null,
+                createdAt: Date.now(),
+                updatedAt: null
+              }
+            }
+          },
+          ...members.map((member) => ({
+            PutRequest: {
+              Item: {
+                userID: member,
+                conversationID: conversationID,
+                lastMessageID: null,
+                createdAt: Date.now(),
+                updatedAt: null
+              }
+            }
+          }))
+        ]
+      }
+    }
+
+    await dynamoClient.batchWrite(params).promise()
+    return { conversationID, members }
+  } catch (error) {
+    throw error
+  }
+}
+
 const addMembers = async (conversationID, members) => {
   try {
     const params = {
@@ -267,5 +306,6 @@ export const conversationModel = {
   findConversationByID,
   getConversations,
   getConversationByName,
-  addMembers
+  addMembers,
+  createUserConversationGroup
 }

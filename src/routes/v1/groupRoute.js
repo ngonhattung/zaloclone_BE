@@ -1,6 +1,6 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { groupController } from '~/controllers/groupController'
+import { groupController } from '~/controllers/groupController.js'
 import { authMiddleware } from '~/middlewares/authMiddleware.js'
 import { multerUploadMiddleware } from '~/middlewares/multerUploadMiddleware'
 const Router = express.Router()
@@ -10,7 +10,7 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
 })
 
 Router.post('/create', authMiddleware.isAuthorized, groupController.createGroup) // tạo nhóm
-// Router.post('/join', authMiddleware.isAuthorized, groupController.joinGroup) // tham gia nhóm
+Router.post('/invite', authMiddleware.isAuthorized, groupController.inviteGroup) // mời vào nhóm
 // Router.post('/leave', authMiddleware.isAuthorized, groupController.leaveGroup) // rời nhóm
 // Router.post('/delete', authMiddleware.isAuthorized, groupController.deleteGroup) // giải tán nhóm
 // Router.post(

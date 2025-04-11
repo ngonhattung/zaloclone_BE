@@ -31,7 +31,7 @@ const create = async (groupName, groupAvatar) => {
   }
 }
 
-const addMembers = async (userID, groupID, members) => {
+const createGroupMembers = async (userID, groupID, members) => {
   try {
     const params = {
       RequestItems: {
@@ -57,7 +57,70 @@ const addMembers = async (userID, groupID, members) => {
     throw new Error(error)
   }
 }
+
+const addMembers = async (groupID, members) => {
+  try {
+    const params = {
+      RequestItems: {
+        [GROUP_MEMBER_TABLE_NAME]: members.map((member) => {
+          return {
+            PutRequest: {
+              Item: {
+                groupID,
+                memberID: member,
+                role: 'member',
+                createdAt: Date.now(),
+                updatedAt: null
+              }
+            }
+          }
+        })
+      }
+    }
+
+    await dynamoClient.batchWrite(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const findGroupByID = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_TABLE_NAME,
+      Key: {
+        groupID
+      }
+    }
+
+    const result = await dynamoClient.get(params).promise()
+    return result.Item
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const findGroupMembersByID = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      KeyConditionExpression: 'groupID = :groupID',
+      ExpressionAttributeValues: {
+        ':groupID': groupID
+      }
+    }
+
+    const result = await dynamoClient.query(params).promise()
+    return result.Items
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const groupModel = {
   create,
-  addMembers
+  createGroupMembers,
+  addMembers,
+  findGroupByID,
+  findGroupMembersByID
 }

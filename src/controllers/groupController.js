@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { groupService } from '~/services/groupService'
+import { groupService } from '~/services/groupService.js'
 import ApiError from '~/utils/ApiError'
 
 const createGroup = async (req, res, next) => {
@@ -20,7 +20,22 @@ const createGroup = async (req, res, next) => {
     next(error)
   }
 }
+const inviteGroup = async (req, res, next) => {
+  try {
+    const { groupID, members, conversationID } = req.body // mảng id của các thành viên trong nhóm
+    const result = await groupService.inviteGroup(
+      groupID,
+      members,
+      conversationID
+    )
 
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
-  createGroup
+  createGroup,
+  inviteGroup
 }
