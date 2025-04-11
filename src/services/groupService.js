@@ -322,10 +322,54 @@ const deleteGroup = async (userID, groupID, conversationID) => {
     throw error
   }
 }
+
+const grantAdmin = async (userID, participantId, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.memberID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể chỉ định quyền admin khi không phải là admin'
+      )
+    }
+
+    const result = await groupModel.grantAdmin(userID, participantId, groupID)
+    if (!result) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Cấp quyền admin thất bại'
+      )
+    }
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('updateGroupChat')
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
+    return {
+      msg: 'Cấp quyền admin thành công'
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
   leaveGroup,
   kickMember,
-  deleteGroup
+  deleteGroup,
+  grantAdmin
 }
