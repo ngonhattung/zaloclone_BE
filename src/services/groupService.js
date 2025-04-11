@@ -558,6 +558,54 @@ const revokeMessage = async (userID, conversationID, messageID, groupID) => {
     throw error
   }
 }
+
+const deleteMessage = async (userID, conversationID, messageID, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    } else if (conversation.type !== 'group') {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cuộc trò chuyện không phải là nhóm'
+      )
+    } else if (conversation.isDestroy) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
+    }
+
+    const message = await messageModel.findMessageByID(messageID)
+    if (!message) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Tin nhắn không tồn tại')
+    }
+
+    if (message.senderID !== userID) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'You are not authorized to delete this message'
+      )
+    }
+
+    await messageModel.deleteMessage(messageID)
+
+    // gửi thông báo cho các thành viên trong nhóm
+    io.to(conversation.conversationID).emit('deleteMessageGroup', messageID)
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   createGroup,
   inviteGroup,
@@ -567,5 +615,6 @@ export const messageService = {
   grantAdmin,
   sendMessage,
   sendFiles,
-  revokeMessage
+  revokeMessage,
+  deleteMessage
 }

@@ -150,7 +150,22 @@ const revokeMessage = async (req, res, next) => {
     next(error)
   }
 }
-
+const deleteMessage = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { messageID, conversationID, groupID } = req.body
+    const result = await groupService.deleteMessage(
+      userID,
+      conversationID,
+      messageID,
+      groupID
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
   inviteGroup,
@@ -160,5 +175,6 @@ export const groupController = {
   grantAdmin,
   sendMessage,
   sendFiles,
-  revokeMessage
+  revokeMessage,
+  deleteMessage
 }
