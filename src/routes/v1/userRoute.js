@@ -62,5 +62,8 @@ Router.route('/login').post(userValidation.login, userController.login)
 
 Router.route('/logout').post(userController.logout)
 
+Router.route('/refresh-token-app').post(userController.refreshTokenApp)
+
 Router.route('/refresh-token').get(userController.refreshToken)
+
 export const userRoutes = Router

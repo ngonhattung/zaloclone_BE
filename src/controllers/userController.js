@@ -156,6 +156,25 @@ const refreshToken = async (req, res, next) => {
   }
 }
 
+const refreshTokenApp = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body
+
+    const result = await userService.refreshToken(refreshToken)
+
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: ms('14 days')
+    })
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNAUTHORIZED, 'Please login!'))
+  }
+}
+
 const searchUser = async (req, res, next) => {
   try {
     const phoneNumber = req.params.phoneNumber
@@ -188,5 +207,6 @@ export const userController = {
   forgetPassword,
   existPhoneNumber,
   updatePassword,
-  updateAvatarUser
+  updateAvatarUser,
+  refreshTokenApp
 }
