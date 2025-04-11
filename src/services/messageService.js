@@ -56,7 +56,8 @@ const sendMessage = async (userID, receiverId, message) => {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
       }
       const createConversation = await conversationModel.createNewConversation(
-        receiver.fullName
+        receiver.fullName,
+        'single'
       )
 
       const messageData = {
@@ -177,7 +178,8 @@ const sendFiles = async (userID, receiverId, files) => {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
       }
       const createConversation = await conversationModel.createNewConversation(
-        receiver.fullName
+        receiver.fullName,
+        'single'
       )
 
       //Đưa upload file vào mảng promiseUpload
@@ -382,7 +384,10 @@ const shareMessage = async (userID, receiverIds, messageID) => {
             throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
           }
           const createConversation =
-            await conversationModel.createNewConversation(receiver.fullName)
+            await conversationModel.createNewConversation(
+              receiver.fullName,
+              'single'
+            )
 
           const messageData = {
             conversationID: createConversation.conversationID,

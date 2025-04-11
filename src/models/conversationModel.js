@@ -40,13 +40,13 @@ const haveTheyChatted = async (userID, receiverId) => {
   }
 }
 
-const createNewConversation = async (fullName) => {
+const createNewConversation = async (fullName, conversationType) => {
   try {
     const conversationID = uuidv4()
 
     const info = {
       conversationID,
-      conversationType: 'private',
+      conversationType: conversationType,
       conversationName: fullName,
       createdAt: Date.now(),
       updatedAt: null
@@ -232,6 +232,32 @@ const getConversationByName = async (conversationName) => {
     throw error
   }
 }
+
+//Group
+const addMembers = async (conversationID, members) => {
+  try {
+    const params = {
+      RequestItems: {
+        [USERCONVERSATION_TABLE_NAME]: members.map((member) => ({
+          PutRequest: {
+            Item: {
+              userID: member,
+              conversationID: conversationID,
+              lastMessageID: null,
+              createdAt: Date.now(),
+              updatedAt: null
+            }
+          }
+        }))
+      }
+    }
+
+    await dynamoClient.batchWrite(params).promise()
+    return { conversationID, members }
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationModel = {
   CONVERSATION_TABLE_NAME,
   haveTheyChatted,
@@ -240,5 +266,6 @@ export const conversationModel = {
   updateLastMessage,
   findConversationByID,
   getConversations,
-  getConversationByName
+  getConversationByName,
+  addMembers
 }
