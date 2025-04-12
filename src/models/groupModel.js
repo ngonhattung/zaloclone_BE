@@ -6,9 +6,9 @@ import moment from 'moment'
 const GROUP_TABLE_NAME = 'groups'
 const GROUP_MEMBER_TABLE_NAME = 'groupMembers'
 
-const create = async (groupName, groupAvatar) => {
+const create = async (conversationID, groupName, groupAvatar) => {
   try {
-    const groupID = uuidv4()
+    const groupID = conversationID
 
     const info = {
       groupID,

@@ -56,10 +56,10 @@ Router.post(
   groupController.deleteMessage
 )
 
-// Router.post(
-//   //chuyển tiếp tin nhắn
-//   '/messages/share',
-//   authMiddleware.isAuthorized,
-//   groupController.shareMessage
-// )
+Router.post(
+  //chuyển tiếp tin nhắn
+  '/messages/share',
+  authMiddleware.isAuthorized,
+  groupController.shareMessage
+)
 export const groupRoutes = Router

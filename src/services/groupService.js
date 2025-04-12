@@ -30,7 +30,11 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
       )
     }
 
-    const group = await groupModel.create(groupName, groupAvatar)
+    const group = await groupModel.create(
+      conversation.conversationID,
+      groupName,
+      groupAvatar
+    )
     if (!group) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Tạo nhóm thất bại')
     }
@@ -62,16 +66,14 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
   }
 }
 
-const inviteGroup = async (groupID, members, conversationID) => {
+const inviteGroup = async (groupID, members) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     }
@@ -120,16 +122,14 @@ const inviteGroup = async (groupID, members, conversationID) => {
   }
 }
 
-const leaveGroup = async (userID, groupID, conversationID) => {
+const leaveGroup = async (userID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     }
@@ -189,16 +189,14 @@ const leaveGroup = async (userID, groupID, conversationID) => {
   }
 }
 
-const kickMember = async (userID, groupID, conversationID, memberID) => {
+const kickMember = async (userID, groupID, memberID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     }
@@ -257,16 +255,14 @@ const kickMember = async (userID, groupID, conversationID, memberID) => {
   }
 }
 
-const deleteGroup = async (userID, groupID, conversationID) => {
+const deleteGroup = async (userID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     }
@@ -369,16 +365,14 @@ const grantAdmin = async (userID, participantId, groupID) => {
   }
 }
 
-const sendMessage = async (userID, conversationID, message, groupID) => {
+const sendMessage = async (userID, message, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     } else if (conversation.type !== 'group') {
@@ -427,16 +421,14 @@ const sendMessage = async (userID, conversationID, message, groupID) => {
   }
 }
 
-const sendFiles = async (userID, conversationID, files, groupID) => {
+const sendFiles = async (userID, files, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     } else if (conversation.type !== 'group') {
@@ -503,16 +495,14 @@ const sendFiles = async (userID, conversationID, files, groupID) => {
   }
 }
 
-const revokeMessage = async (userID, conversationID, messageID, groupID) => {
+const revokeMessage = async (userID, messageID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     } else if (conversation.type !== 'group') {
@@ -559,16 +549,14 @@ const revokeMessage = async (userID, conversationID, messageID, groupID) => {
   }
 }
 
-const deleteMessage = async (userID, conversationID, messageID, groupID) => {
+const deleteMessage = async (userID, messageID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
-    const conversation = await conversationModel.findConversationByID(
-      conversationID
-    )
+    const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     } else if (conversation.type !== 'group') {
@@ -606,6 +594,78 @@ const deleteMessage = async (userID, conversationID, messageID, groupID) => {
     throw error
   }
 }
+
+const shareMessage = async (userID, messageID, groupIDs) => {
+  try {
+    const message = await messageModel.findMessageByID(messageID)
+    if (!message) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        'Message not found. Cannot share message'
+      )
+    }
+
+    const groupSharePromises = groupIDs.map(async (groupID) => {
+      const groupMembers = await groupModel.findGroupMembersByID(groupID)
+      if (!groupMembers) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+      }
+
+      const conversation = await conversationModel.findConversationByID(groupID)
+      if (!conversation) {
+        throw new ApiError(
+          StatusCodes.NOT_FOUND,
+          'Cuộc trò chuyện không tồn tại'
+        )
+      }
+      if (conversation.type !== 'group') {
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          'Cuộc trò chuyện không phải là nhóm'
+        )
+      }
+      if (conversation.isDestroy) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
+      }
+
+      const messageData = {
+        conversationID: conversation.conversationID,
+        senderID: userID,
+        content: message.messageContent,
+        url: message.messageUrl,
+        type: message.messageType
+      }
+
+      const createNewMessage = await messageModel.createNewMessage(messageData)
+
+      const userConversation = {
+        conversationID: conversation.conversationID,
+        lastMessage: createNewMessage.messageID
+      }
+
+      const updateLastMessagePromise = groupMembers.map((member) =>
+        conversationModel.updateLastMessage(member.memberID, userConversation)
+      )
+      await Promise.all(updateLastMessagePromise)
+
+      // Emit socket
+      io.to(conversation.conversationID).emit('shareMessageGroup', message)
+      groupMembers.forEach((member) => {
+        const participantSocketId = getReceiverSocketId(member.memberID)
+        if (participantSocketId) {
+          io.to(participantSocketId).emit('notification')
+        }
+      })
+    })
+
+    await Promise.all(groupSharePromises)
+
+    return { msg: message }
+  } catch (error) {
+    throw error
+  }
+}
+
 export const messageService = {
   createGroup,
   inviteGroup,
@@ -616,5 +676,6 @@ export const messageService = {
   sendMessage,
   sendFiles,
   revokeMessage,
-  deleteMessage
+  deleteMessage,
+  shareMessage
 }
