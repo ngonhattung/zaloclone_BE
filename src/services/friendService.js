@@ -40,6 +40,8 @@ const friendRequest = async (senderID, receiverID) => {
       io.to(receiverSocketID).emit('friendRequest', {
         friendShip
       })
+    }
+    if (senderSocketID) {
       io.to(senderSocketID).emit('sentFriendRequest', {
         friendShip
       })
@@ -72,6 +74,8 @@ const cancelFriendRequest = async (senderID, receiverID) => {
       io.to(receiverSocketID).emit('friendRequest', {
         message: 'A friend request has been cancelled'
       })
+    }
+    if (senderSocketID) {
       io.to(senderSocketID).emit('sentFriendRequest', {
         message: 'You have canceled the friend request'
       })
@@ -148,6 +152,8 @@ const declineFriendRequest = async (senderID, receiverID) => {
       io.to(receiverSocketID).emit('friendRequest', {
         message: 'You have declined the friend request'
       })
+    }
+    if (senderSocketID) {
       io.to(senderSocketID).emit('sentFriendRequest', {
         message: 'A friend request has been declined'
       })
