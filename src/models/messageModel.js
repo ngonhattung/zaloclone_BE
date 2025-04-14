@@ -16,7 +16,7 @@ const createNewMessage = async (messageData) => {
       messageType: messageData.type,
       revoke: false,
       createdAt: Date.now(),
-      updatedAt: null
+      updatedAt: Date.now()
     }
 
     const params = {
@@ -93,13 +93,12 @@ const getMessagesByConversation = async (conversationID) => {
       TableName: MESSAGE_TABLE_NAME,
       IndexName: 'conversationID-index',
       KeyConditionExpression: 'conversationID = :c',
-      FilterExpression: 'destroy = :d',
       ExpressionAttributeValues: {
-        ':c': conversationID,
-        ':d': false
+        ':c': conversationID
       }
     }
     const result = await dynamoClient.query(params).promise()
+    console.log('result', result)
     return result.Items
   } catch (error) {
     throw new Error(error)

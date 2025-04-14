@@ -7,11 +7,19 @@ import { S3Provider } from '~/providers/S3Provider'
 import { userModel } from '~/models/userModel'
 const sendMessage = async (userID, receiverId, message) => {
   try {
+    if (userID === receiverId) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cannot send message to yourself'
+      )
+    }
+
     // Tìm xem 2 người đã từng gửi tin nhắn với nhau hay chưa
-    const conversation = await conversationModel.haveTheyChatted(
+    const conversationExist = await conversationModel.haveTheyChatted(
       userID,
       receiverId
     )
+    const conversation = conversationExist?.convDetails
     let msg = {}
     if (conversation) {
       /* Nếu từng nhắn rồi
@@ -51,6 +59,12 @@ const sendMessage = async (userID, receiverId, message) => {
       - Lưu conversationID + info vào message
       - Lưu userId của 2 người vào user_conversation + lastMessage
     */
+
+      const userCurrent = await userModel.getUserById(userID)
+      if (!userCurrent) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+      }
+
       const receiver = await userModel.getUserById(receiverId)
       if (!receiver) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
@@ -69,15 +83,25 @@ const sendMessage = async (userID, receiverId, message) => {
 
       const createNewMessage = await messageModel.createNewMessage(messageData)
 
-      const userConversation = {
+      const userConversationReciever = {
         conversationID: createConversation.conversationID,
+        conversationName: userCurrent.fullName,
+        conversationAvatar: userCurrent.avatar,
         lastMessage: createNewMessage.messageID
       }
-
-      await conversationModel.addUserToConversation(userID, userConversation)
+      const userConversationSender = {
+        conversationID: createConversation.conversationID,
+        conversationName: receiver.fullName,
+        conversationAvatar: receiver.avatar,
+        lastMessage: createNewMessage.messageID
+      }
+      await conversationModel.addUserToConversation(
+        userID,
+        userConversationSender
+      )
       await conversationModel.addUserToConversation(
         receiverId,
-        userConversation
+        userConversationReciever
       )
 
       const userSockerID = getUserSocketId(userID)
@@ -108,10 +132,11 @@ const sendMessage = async (userID, receiverId, message) => {
 const sendFiles = async (userID, receiverId, files) => {
   try {
     // Tìm xem 2 người đã từng gửi tin nhắn với nhau hay chưa
-    const conversation = await conversationModel.haveTheyChatted(
+    const conversationExist = await conversationModel.haveTheyChatted(
       userID,
       receiverId
     )
+    const conversation = conversationExist?.convDetails
     let msg = {}
 
     //Lưu message vào database
@@ -235,13 +260,14 @@ const sendFiles = async (userID, receiverId, files) => {
     throw error
   }
 }
-
+//Sửa lại
 const revokeMessage = async (userID, participantId, messageID) => {
   try {
-    const conversation = await conversationModel.haveTheyChatted(
+    const conversationExist = await conversationModel.haveTheyChatted(
       userID,
       participantId
     )
+    const conversation = conversationExist?.convDetails
 
     if (!conversation) {
       throw new ApiError(
@@ -341,10 +367,11 @@ const shareMessage = async (userID, receiverIds, messageID) => {
         const receiverSocketID = getReceiverSocketId(receiverId)
         let msg = {}
 
-        const conversation = await conversationModel.haveTheyChatted(
+        const conversationExist = await conversationModel.haveTheyChatted(
           userID,
           receiverId
         )
+        const conversation = conversationExist?.convDetails
         if (conversation) {
           // Đã có cuộc trò chuyện -> Gửi tin nhắn vào cuộc trò chuyện cũ
           const messageData = {
@@ -451,15 +478,21 @@ const getMessagesByConversation = async (conversationID) => {
       conversationID
     )
 
+    console.log('conversation', conversation)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Conversation not found')
     }
 
-    const messages = await messageModel.getMessagesByConversation(
-      conversationID
-    )
+    try {
+      const messages = await messageModel.getMessagesByConversation(
+        conversationID
+      )
+      console.log('messages', messages)
 
-    return messages
+      return messages
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+    }
   } catch (error) {
     throw error
   }

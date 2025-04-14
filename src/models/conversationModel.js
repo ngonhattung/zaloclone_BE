@@ -31,7 +31,7 @@ const haveTheyChatted = async (userID, receiverId) => {
     for (let [convId, convDetails] of convSetUser) {
       if (convSetReceiver.has(convId)) {
         console.log('convDetails', convDetails)
-        return { conversation: convDetails } // Trả về thông tin conversation
+        return { convDetails } // Trả về thông tin conversation
       }
     }
     return null
@@ -40,17 +40,16 @@ const haveTheyChatted = async (userID, receiverId) => {
   }
 }
 
-const createNewConversation = async (fullName, conversationType) => {
+const createNewConversation = async (conversationType) => {
   try {
     const conversationID = uuidv4()
 
     const info = {
       conversationID,
       conversationType: conversationType,
-      conversationName: fullName,
       destroy: false,
       createdAt: Date.now(),
-      updatedAt: null
+      updatedAt: Date.now()
     }
 
     const params = {
@@ -73,10 +72,12 @@ const addUserToConversation = async (userID, userConversation) => {
       Item: {
         userID: userID,
         conversationID: userConversation.conversationID,
+        conversationName: userConversation.conversationName,
+        conversationAvatar: userConversation.conversationAvatar,
         lastMessageID: userConversation.lastMessage,
         destroy: false,
         createdAt: Date.now(),
-        updatedAt: null
+        updatedAt: Date.now()
       }
     }
     await dynamoClient.put(params).promise()
@@ -128,8 +129,12 @@ const getConversations = async (userID) => {
     const result = await dynamoClient
       .query({
         TableName: USERCONVERSATION_TABLE_NAME,
+        IndexName: 'UserUpdatedAtIndex',
         KeyConditionExpression: 'userID = :userID',
-        ExpressionAttributeValues: { ':userID': userID }
+        ExpressionAttributeValues: {
+          ':userID': userID.toString()
+        },
+        ScanIndexForward: false // sắp xếp giảm dần (mới nhất trước)
       })
       .promise()
 
@@ -137,53 +142,25 @@ const getConversations = async (userID) => {
       return [] // Không có cuộc trò chuyện nào
     }
 
-    // Lấy danh sách conversationID và lastMessageID
-    const conversationIDs = result.Items.map(
-      (item) => item.conversationID
-    ).filter((id) => id)
+    console.log('result.Items', result.Items)
 
     const lastMessageIDs = result.Items.map(
       (item) => item.lastMessageID
     ).filter((id) => id)
 
-    // Truy vấn tất cả conversationName từ bảng conversations
-    // const conversationNames = await Promise.all(
-    //   conversationIDs.map((id) => conversationModel.findConversationByID(id))
-    // )
-
-    let conversationMap = {}
-    if (conversationIDs.length > 0) {
-      const conversationData = await dynamoClient
-        .batchGet({
-          RequestItems: {
-            [CONVERSATION_TABLE_NAME]: {
-              Keys: conversationIDs.map((id) => ({ conversationID: id }))
-            }
-          }
-        })
-        .promise()
-
-      // Chuyển thành Map để truy xuất nhanh
-      conversationMap = (
-        conversationData.Responses[CONVERSATION_TABLE_NAME] || []
-      ).reduce((acc, convo) => {
-        acc[convo.conversationID] = convo.name
-        return acc
-      }, {})
-    }
-
     // Truy vấn tất cả tin nhắn
-    // const lastMessages = await Promise.all(
-    //   lastMessageIDs.map((id) => messageModel.findMessageByID(id))
-    // )
-
     let messageMap = {}
     if (lastMessageIDs.length > 0) {
+      const messageKeys = result.Items.map((item) => ({
+        conversationID: item.conversationID,
+        messageID: item.lastMessageID
+      })).filter((key) => key.conversationID && key.messageID)
+
       const messageData = await dynamoClient
         .batchGet({
           RequestItems: {
             [messageModel.MESSAGE_TABLE_NAME]: {
-              Keys: lastMessageIDs.map((id) => ({ messageID: id }))
+              Keys: messageKeys
             }
           }
         })
@@ -198,15 +175,10 @@ const getConversations = async (userID) => {
       }, {})
     }
 
+    console.log('messageMap', messageMap)
     // Kết hợp dữ liệu
-    // const conversations = result.Items.map((item, index) => ({
-    //   conversation: item,
-    //   conversationName: conversationNames[index]?.name || 'Unknown',
-    //   lastMessage: lastMessages[index] || null
-    // }))
     const conversations = result.Items.map((item) => ({
       conversation: item,
-      conversationName: conversationMap[item.conversationID] || 'Unknown',
       lastMessage: messageMap[item.lastMessageID] || null
     }))
     console.log('Conversations:', conversations)
