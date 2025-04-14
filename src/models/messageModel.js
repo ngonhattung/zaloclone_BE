@@ -15,6 +15,7 @@ const createNewMessage = async (messageData) => {
       messageUrl: messageData.url || null,
       messageType: messageData.type,
       revoke: false,
+      senderDelete: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
     }
@@ -30,14 +31,16 @@ const createNewMessage = async (messageData) => {
   }
 }
 
-const findMessageByID = async (messageID) => {
+const findMessageByID = async (messageID, conversationID) => {
   try {
     const params = {
       TableName: MESSAGE_TABLE_NAME,
       Key: {
-        messageID
+        conversationID: conversationID,
+        messageID: messageID
       }
     }
+    console.log('params findMessageByID', params)
     const result = await dynamoClient.get(params).promise()
     return result.Item
   } catch (error) {
@@ -45,43 +48,46 @@ const findMessageByID = async (messageID) => {
   }
 }
 
-const revokeMessage = async (messageID) => {
+const revokeMessage = async (messageID, conversationID) => {
   try {
     const params = {
       TableName: MESSAGE_TABLE_NAME,
       Key: {
-        messageID
+        conversationID: conversationID,
+        messageID: messageID
       },
-      UpdateExpression: 'set revoke = :r, updatedAt = :u',
+      UpdateExpression: 'set #revoke_status = :r,messageContent = :mt',
+      ExpressionAttributeNames: {
+        '#revoke_status': 'revoke'
+      },
       ExpressionAttributeValues: {
         ':r': true,
-        ':u': Date.now()
+        ':mt': 'Tin nhắn đã bị thu hồi'
       },
       ReturnValues: 'ALL_NEW'
     }
-    const result = await dynamoClient.update(params).promise()
-    return result.Attributes
+    await dynamoClient.update(params).promise()
   } catch (error) {
     throw new Error(error)
   }
 }
 
-const deleteMessage = async (userID, messageID) => {
+const deleteMessage = async (messageID, conversationID) => {
   try {
     const params = {
       TableName: MESSAGE_TABLE_NAME,
-      Key: { messageID },
-      UpdateExpression: 'set revoke = :revoke',
-      ExpressionAttributeValues: {
-        ':revoke': true,
-        ':senderID': userID
+      Key: {
+        conversationID: conversationID,
+        messageID: messageID
       },
-      ConditionExpression: 'senderID = :senderID',
+      UpdateExpression: 'set senderDelete = :sd',
+      ExpressionAttributeValues: {
+        ':sd': true
+      },
       ReturnValues: 'UPDATED_NEW'
     }
 
-    const result = await dynamoClient.update(params).promise()
-    return result.Attributes
+    await dynamoClient.update(params).promise()
   } catch (error) {
     throw new Error(error)
   }
@@ -91,14 +97,14 @@ const getMessagesByConversation = async (conversationID) => {
   try {
     const params = {
       TableName: MESSAGE_TABLE_NAME,
-      IndexName: 'conversationID-index',
+      IndexName: 'conversationID-updatedAt-index',
       KeyConditionExpression: 'conversationID = :c',
       ExpressionAttributeValues: {
         ':c': conversationID
-      }
+      },
+      ScanIndexForward: false
     }
     const result = await dynamoClient.query(params).promise()
-    console.log('result', result)
     return result.Items
   } catch (error) {
     throw new Error(error)

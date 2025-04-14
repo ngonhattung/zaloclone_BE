@@ -70,7 +70,6 @@ const sendMessage = async (userID, receiverId, message) => {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
       }
       const createConversation = await conversationModel.createNewConversation(
-        receiver.fullName,
         'single'
       )
 
@@ -131,6 +130,13 @@ const sendMessage = async (userID, receiverId, message) => {
 
 const sendFiles = async (userID, receiverId, files) => {
   try {
+    if (userID === receiverId) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cannot send message to yourself'
+      )
+    }
+
     // Tìm xem 2 người đã từng gửi tin nhắn với nhau hay chưa
     const conversationExist = await conversationModel.haveTheyChatted(
       userID,
@@ -198,12 +204,17 @@ const sendFiles = async (userID, receiverId, files) => {
       }
     } else {
       //Nếu chưa từng nhắn tin
+
+      const userCurrent = await userModel.getUserById(userID)
+      if (!userCurrent) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+      }
+
       const receiver = await userModel.getUserById(receiverId)
       if (!receiver) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
       }
       const createConversation = await conversationModel.createNewConversation(
-        receiver.fullName,
         'single'
       )
 
@@ -220,18 +231,26 @@ const sendFiles = async (userID, receiverId, files) => {
         const messageResults = await Promise.all(uploadResults.map(saveMessage))
 
         if (messageResults) {
-          const userConversation = {
+          const userConversationReciever = {
             conversationID: createConversation.conversationID,
+            conversationName: userCurrent.fullName,
+            conversationAvatar: userCurrent.avatar,
+            lastMessage: messageResults[messageResults.length - 1].messageID
+          }
+          const userConversationSender = {
+            conversationID: createConversation.conversationID,
+            conversationName: receiver.fullName,
+            conversationAvatar: receiver.avatar,
             lastMessage: messageResults[messageResults.length - 1].messageID
           }
 
           await conversationModel.addUserToConversation(
             userID,
-            userConversation
+            userConversationSender
           )
           await conversationModel.addUserToConversation(
             receiverId,
-            userConversation
+            userConversationReciever
           )
 
           const userSockerID = getUserSocketId(userID)
@@ -260,13 +279,19 @@ const sendFiles = async (userID, receiverId, files) => {
     throw error
   }
 }
-//Sửa lại
-const revokeMessage = async (userID, participantId, messageID) => {
+
+const revokeMessage = async (
+  userID,
+  participantId,
+  messageID,
+  conversationID
+) => {
   try {
     const conversationExist = await conversationModel.haveTheyChatted(
       userID,
       participantId
     )
+
     const conversation = conversationExist?.convDetails
 
     if (!conversation) {
@@ -276,7 +301,10 @@ const revokeMessage = async (userID, participantId, messageID) => {
       )
     }
 
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
 
     if (!message) {
       throw new ApiError(
@@ -292,28 +320,32 @@ const revokeMessage = async (userID, participantId, messageID) => {
       )
     }
 
-    await messageModel.revokeMessage(messageID)
-
-    const messageContent = 'Tin nhắn đã bị thu hồi'
-
+    await messageModel.revokeMessage(messageID, conversationID)
+    const messageAfterRevoke = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
     const receiverSocketId = getReceiverSocketId(participantId)
     const userSocketId = getUserSocketId(userID)
     if (receiverSocketId && userSocketId) {
-      io.to(receiverSocketId).emit('revokeMessage', messageContent)
+      io.to(receiverSocketId).emit('revokeMessage', messageAfterRevoke)
       io.to(receiverSocketId).to(userSocketId).emit('notification')
     } else {
       io.to(userSocketId).emit('notification')
     }
 
-    return { msg: messageContent }
+    return messageAfterRevoke
   } catch (error) {
     throw error
   }
 }
 
-const deleteMessage = async (userID, messageID) => {
+const deleteMessage = async (userID, messageID, conversationID) => {
   try {
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
 
     if (!message) {
       throw new ApiError(
@@ -329,9 +361,20 @@ const deleteMessage = async (userID, messageID) => {
       )
     }
 
-    await messageModel.deleteMessage(userID, messageID)
+    await messageModel.deleteMessage(messageID, conversationID)
 
-    return { msg: 'Message deleted successfully' }
+    const messageAfterDelete = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
+
+    const userSocketId = getUserSocketId(userID)
+
+    if (userSocketId) {
+      io.to(userSocketId).emit('deleteMessage', messageAfterDelete)
+      io.to(userSocketId).emit('notification')
+    }
+    return messageAfterDelete
   } catch (error) {
     throw error
   }
@@ -478,7 +521,6 @@ const getMessagesByConversation = async (conversationID) => {
       conversationID
     )
 
-    console.log('conversation', conversation)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Conversation not found')
     }
@@ -487,7 +529,6 @@ const getMessagesByConversation = async (conversationID) => {
       const messages = await messageModel.getMessagesByConversation(
         conversationID
       )
-      console.log('messages', messages)
 
       return messages
     } catch (error) {

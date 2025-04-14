@@ -132,7 +132,7 @@ const getConversations = async (userID) => {
         IndexName: 'UserUpdatedAtIndex',
         KeyConditionExpression: 'userID = :userID',
         ExpressionAttributeValues: {
-          ':userID': userID.toString()
+          ':userID': userID
         },
         ScanIndexForward: false // sắp xếp giảm dần (mới nhất trước)
       })

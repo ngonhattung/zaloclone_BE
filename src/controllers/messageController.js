@@ -56,17 +56,19 @@ const sendFiles = async (req, res, next) => {
 //   }
 // }
 
-const revokeMessage = (req, res, next) => {
+const revokeMessage = async (req, res, next) => {
   try {
     const { participantId } = req.params
     const userID = req.jwtDecoded.userID
-    const { messageID } = req.body
+    const { messageID, conversationID } = req.body
 
-    const result = messageService.revokeMessage(
+    const result = await messageService.revokeMessage(
       userID,
       participantId,
-      messageID
+      messageID,
+      conversationID
     )
+    console.log('result revokeMessage', result)
 
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)
@@ -75,12 +77,16 @@ const revokeMessage = (req, res, next) => {
   }
 }
 
-const deleteMessage = (req, res, next) => {
+const deleteMessage = async (req, res, next) => {
   try {
-    const { messageID } = req.body
+    const { messageID, conversationID } = req.body
     const userID = req.jwtDecoded.userID
 
-    const result = messageService.deleteMessage(userID, messageID)
+    const result = await messageService.deleteMessage(
+      userID,
+      messageID,
+      conversationID
+    )
 
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)
