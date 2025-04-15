@@ -81,7 +81,7 @@ const addMembers = async (groupID, members) => {
             PutRequest: {
               Item: {
                 groupID,
-                memberID: member,
+                userID: member,
                 role: 'member',
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
@@ -139,15 +139,10 @@ const leaveGroup = async (userID, groupID) => {
       TableName: GROUP_MEMBER_TABLE_NAME,
       Key: {
         groupID,
-        memberID: userID
-      },
-      UpdateExpression: 'set destroy = :destroy',
-      ExpressionAttributeValues: {
-        ':destroy': true
+        userID: userID
       }
     }
-
-    await dynamoClient.update(params).promise()
+    await dynamoClient.delete(params).promise()
     return true
   } catch (error) {
     throw new Error(error)
@@ -160,33 +155,55 @@ const deleteGroup = async (groupID) => {
       TableName: GROUP_TABLE_NAME,
       Key: {
         groupID
-      },
-      UpdateExpression: 'set destroy = :destroy',
-      ExpressionAttributeValues: {
-        ':destroy': true
       }
     }
 
-    await dynamoClient.update(params).promise()
+    await dynamoClient.delete(params).promise()
     return true
   } catch (error) {
     throw new Error(error)
   }
 }
 
-const grantAdmin = async (groupID, memberID) => {
+const grantAdmin = async (memberID, groupID) => {
   try {
     const promoteParams = {
       TableName: GROUP_MEMBER_TABLE_NAME,
-      Key: { groupID, memberID },
-      UpdateExpression: 'set role = :role',
-      ExpressionAttributeValues: { ':role': 'admin' }
+      Key: { groupID, userID: memberID },
+      UpdateExpression: 'set #r = :role',
+      ExpressionAttributeNames: {
+        '#r': 'role'
+      },
+      ExpressionAttributeValues: {
+        ':role': 'admin'
+      }
     }
 
     await dynamoClient.update(promoteParams).promise()
     return true
   } catch (error) {
     throw new Error(`grantAdmin error: ${error.message}`)
+  }
+}
+
+const revokeAdmin = async (userID, groupID) => {
+  try {
+    const revokeParams = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: { groupID, userID: userID },
+      UpdateExpression: 'set #r = :role',
+      ExpressionAttributeNames: {
+        '#r': 'role'
+      },
+      ExpressionAttributeValues: {
+        ':role': 'member'
+      }
+    }
+
+    await dynamoClient.update(revokeParams).promise()
+    return true
+  } catch (error) {
+    throw new Error(`revokeAdmin error: ${error.message}`)
   }
 }
 export const groupModel = {
@@ -197,5 +214,6 @@ export const groupModel = {
   findGroupMembersByID,
   leaveGroup,
   deleteGroup,
-  grantAdmin
+  grantAdmin,
+  revokeAdmin
 }

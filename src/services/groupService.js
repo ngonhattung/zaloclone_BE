@@ -68,7 +68,7 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
 const inviteGroup = async (groupID, members) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -124,7 +124,7 @@ const inviteGroup = async (groupID, members) => {
 const leaveGroup = async (userID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -139,7 +139,7 @@ const leaveGroup = async (userID, groupID) => {
     )
 
     const isOnlyAdmin =
-      adminMembers.length === 1 && adminMembers[0].memberID === userID
+      adminMembers.length === 1 && adminMembers[0].userID === userID
 
     if (isOnlyAdmin) {
       throw new ApiError(
@@ -165,11 +165,8 @@ const leaveGroup = async (userID, groupID) => {
     }
 
     //gửi thông báo tới người rời nhóm
-    const removeParticipantSocketId = getReceiverSocketId(userID)
-    if (removeParticipantSocketId) {
-      io.to(removeParticipantSocketId).emit('delConversation', conversation)
-      io.to(removeParticipantSocketId).emit('remove')
-    }
+    const userSocketId = getUserSocketId(userID)
+    io.to(userSocketId).emit('delConversation', conversation)
 
     // gửi thông báo cho các thành viên trong nhóm
     groupMembers.forEach((member) => {
@@ -180,9 +177,7 @@ const leaveGroup = async (userID, groupID) => {
       }
     })
 
-    return {
-      msg: conversation
-    }
+    return conversation
   } catch (error) {
     throw error
   }
@@ -191,7 +186,7 @@ const leaveGroup = async (userID, groupID) => {
 const kickMember = async (userID, groupID, memberID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -202,19 +197,19 @@ const kickMember = async (userID, groupID, memberID) => {
 
     // Kiểm tra quyền admin
     const isAdmin = groupMembers.some(
-      (member) => member.memberID === userID && member.role === 'admin'
+      (member) => member.userID === userID && member.role === 'admin'
     )
     if (!isAdmin) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'Bạn không thể giải tán nhóm khi không phải là admin'
+        'Bạn không thể xóa thành viên nhóm khi không phải là admin'
       )
     }
 
-    const userConversation = await conversationModel.leaveGroup({
-      conversationID: conversation.conversationID,
-      userID: memberID
-    })
+    const userConversation = await conversationModel.leaveGroup(
+      memberID,
+      conversation.conversationID
+    )
     if (!userConversation) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -222,10 +217,7 @@ const kickMember = async (userID, groupID, memberID) => {
       )
     }
 
-    const result = await groupModel.leaveGroup({
-      userID: memberID,
-      groupID
-    })
+    const result = await groupModel.leaveGroup(memberID, groupID)
     if (!result) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
     }
@@ -234,7 +226,6 @@ const kickMember = async (userID, groupID, memberID) => {
     const removeParticipantSocketId = getReceiverSocketId(memberID)
     if (removeParticipantSocketId) {
       io.to(removeParticipantSocketId).emit('delConversation', conversation)
-      io.to(removeParticipantSocketId).emit('remove')
     }
 
     // gửi thông báo cho các thành viên trong nhóm
@@ -246,9 +237,7 @@ const kickMember = async (userID, groupID, memberID) => {
       }
     })
 
-    return {
-      msg: conversation
-    }
+    return conversation
   } catch (error) {
     throw error
   }
@@ -257,7 +246,7 @@ const kickMember = async (userID, groupID, memberID) => {
 const deleteGroup = async (userID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -268,7 +257,7 @@ const deleteGroup = async (userID, groupID) => {
 
     // Kiểm tra quyền admin
     const isAdmin = groupMembers.some(
-      (member) => member.memberID === userID && member.role === 'admin'
+      (member) => member.userID === userID && member.role === 'admin'
     )
     if (!isAdmin) {
       throw new ApiError(
@@ -277,26 +266,50 @@ const deleteGroup = async (userID, groupID) => {
       )
     }
 
-    // Xóa thành viên khỏi nhóm bằng Promise.all
+    // Xóa thành viên khỏi conversation bằng Promise.all
     const leaveGroupPromises = groupMembers.map((member) =>
-      conversationModel.leaveGroup({
-        conversationID: conversation.conversationID,
-        userID: member.memberID
-      })
+      conversationModel.leaveGroup(member.userID, conversation.conversationID)
     )
-
     const leaveResults = await Promise.all(leaveGroupPromises)
 
-    // Kiểm tra kết quả
+    //Kiểm tra kết quả
     if (leaveResults.includes(null)) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Một số thành viên không thể rời nhóm trò chuyện'
+      )
+    }
+
+    // Xóa thành viên khỏi nhóm
+    const leaveGroupPromises2 = groupMembers.map((member) =>
+      groupModel.leaveGroup(member.userID, groupID)
+    )
+
+    const leaveResults2 = await Promise.all(leaveGroupPromises2)
+
+    // Kiểm tra kết quả
+    if (leaveResults2.includes(null)) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
         'Một số thành viên không thể rời nhóm'
       )
     }
 
+    // Xóa cuộc trò chuyện
+    const deleteConversation = await conversationModel.deleteConversation(
+      conversation.conversationID
+    )
+
+    // Kiểm tra kết quả
+    if (!deleteConversation) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Xóa cuộc trò chuyện thất bại'
+      )
+    }
+
     // Xóa nhóm
-    const result = await groupModel.deleteGroup(userID, groupID)
+    const result = await groupModel.deleteGroup(groupID)
     if (!result) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -313,9 +326,7 @@ const deleteGroup = async (userID, groupID) => {
       }
     })
 
-    return {
-      msg: conversation
-    }
+    return conversation
   } catch (error) {
     throw error
   }
@@ -324,13 +335,13 @@ const deleteGroup = async (userID, groupID) => {
 const grantAdmin = async (userID, participantId, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
     // Kiểm tra quyền admin
     const isAdmin = groupMembers.some(
-      (member) => member.memberID === userID && member.role === 'admin'
+      (member) => member.userID === userID && member.role === 'admin'
     )
     if (!isAdmin) {
       throw new ApiError(
@@ -344,6 +355,15 @@ const grantAdmin = async (userID, participantId, groupID) => {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
         'Cấp quyền admin thất bại'
+      )
+    }
+
+    const resultRevoke = await groupModel.revokeAdmin(userID, groupID)
+
+    if (!resultRevoke) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Thu hồi admin thất bại'
       )
     }
 
@@ -367,10 +387,9 @@ const grantAdmin = async (userID, participantId, groupID) => {
 const sendMessage = async (userID, message, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
-
     const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
@@ -423,7 +442,7 @@ const sendMessage = async (userID, message, groupID) => {
 const sendFiles = async (userID, files, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -497,10 +516,9 @@ const sendFiles = async (userID, files, groupID) => {
 const revokeMessage = async (userID, messageID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
-
     const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
@@ -551,7 +569,7 @@ const revokeMessage = async (userID, messageID, groupID) => {
 const deleteMessage = async (userID, messageID, groupID) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
-    if (!groupMembers) {
+    if (!groupMembers || groupMembers.length === 0) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
 
@@ -606,10 +624,9 @@ const shareMessage = async (userID, messageID, groupIDs) => {
 
     const groupSharePromises = groupIDs.map(async (groupID) => {
       const groupMembers = await groupModel.findGroupMembersByID(groupID)
-      if (!groupMembers) {
+      if (!groupMembers || groupMembers.length === 0) {
         throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
       }
-
       const conversation = await conversationModel.findConversationByID(groupID)
       if (!conversation) {
         throw new ApiError(

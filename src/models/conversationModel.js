@@ -291,7 +291,7 @@ const addMembers = async (conversationID, members) => {
               lastMessageID: null,
               destroy: false,
               createdAt: Date.now(),
-              updatedAt: null
+              updatedAt: Date.now()
             }
           }
         }))
@@ -312,14 +312,27 @@ const leaveGroup = async (userID, conversationID) => {
       Key: {
         userID: userID,
         conversationID: conversationID
-      },
-      UpdateExpression: 'set destroy = :destroy',
-      ExpressionAttributeValues: {
-        ':destroy': true
       }
     }
-    await dynamoClient.update(params).promise()
+
+    await dynamoClient.delete(params).promise()
     return { message: 'Left group successfully' }
+  } catch (error) {
+    throw error
+  }
+}
+
+const deleteConversation = async (conversationID) => {
+  try {
+    const params = {
+      TableName: CONVERSATION_TABLE_NAME,
+      Key: {
+        conversationID: conversationID
+      }
+    }
+
+    await dynamoClient.delete(params).promise()
+    return { message: 'Conversation deleted successfully' }
   } catch (error) {
     throw error
   }
@@ -336,5 +349,6 @@ export const conversationModel = {
   addMembers,
   createUserConversationGroup,
   leaveGroup,
-  getReceiverByConversationId
+  getReceiverByConversationId,
+  deleteConversation
 }

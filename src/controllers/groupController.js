@@ -82,7 +82,6 @@ const grantAdmin = async (req, res, next) => {
     next(error)
   }
 }
-
 const sendMessage = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
