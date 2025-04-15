@@ -18,4 +18,9 @@ Router.route('/haveTheyChatted/:receiverId').get(
   authMiddleware.isAuthorized,
   conversationController.checkConversationExist
 )
+
+Router.route('/getReceiver/:conversationId').get(
+  authMiddleware.isAuthorized,
+  conversationController.getReceiver
+)
 export const conversationRoutes = Router

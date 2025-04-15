@@ -5,8 +5,9 @@ import ApiError from '~/utils/ApiError'
 const createGroup = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
-    const { groupName, groupAvatar } = req.body
-    const members = req.body.members // mảng id của các thành viên trong nhóm
+    const { groupName, members } = req.body
+    const groupAvatar = req.file
+
     const result = await groupService.createGroup(
       userID,
       groupName,

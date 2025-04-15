@@ -32,8 +32,21 @@ const checkConversationExist = async (userID, receiverId) => {
     throw error
   }
 }
+
+const getReceiverByConversationId = async (userID, conversationId) => {
+  try {
+    const result = await conversationModel.getReceiverByConversationId(
+      userID,
+      conversationId
+    )
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationService = {
   getConversations,
   getConversationByName,
-  checkConversationExist
+  checkConversationExist,
+  getReceiverByConversationId
 }

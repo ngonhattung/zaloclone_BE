@@ -8,7 +8,7 @@ import { S3Provider } from '~/providers/S3Provider'
 
 const createGroup = async (userID, groupName, groupAvatar, members) => {
   try {
-    const conversation = await conversationModel.create(groupName, 'group')
+    const conversation = await conversationModel.createNewConversation('group')
     if (!conversation) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
@@ -30,10 +30,11 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
       )
     }
 
+    const uploadResult = await S3Provider.streamUpload(groupAvatar, userID)
     const group = await groupModel.create(
       conversation.conversationID,
       groupName,
-      groupAvatar
+      uploadResult.Location
     )
     if (!group) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Tạo nhóm thất bại')
@@ -58,9 +59,7 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
       }
     })
 
-    return {
-      msg: conversation
-    }
+    return conversation
   } catch (error) {
     throw error
   }
@@ -150,8 +149,8 @@ const leaveGroup = async (userID, groupID) => {
     }
 
     const userConversation = await conversationModel.leaveGroup(
-      conversation.conversationID,
-      userID
+      userID,
+      conversation.conversationID
     )
     if (!userConversation) {
       throw new ApiError(
@@ -666,7 +665,7 @@ const shareMessage = async (userID, messageID, groupIDs) => {
   }
 }
 
-export const messageService = {
+export const groupService = {
   createGroup,
   inviteGroup,
   leaveGroup,

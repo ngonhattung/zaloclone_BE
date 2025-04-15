@@ -85,25 +85,14 @@ const sendMessage = async (userID, receiverId, message) => {
 
       const createNewMessage = await messageModel.createNewMessage(messageData)
 
-      const userConversationReciever = {
+      const userConversation = {
         conversationID: createConversation.conversationID,
-        conversationName: userCurrent.fullName,
-        conversationAvatar: userCurrent.avatar,
-        lastMessage: createNewMessage.messageID
-      }
-      const userConversationSender = {
-        conversationID: createConversation.conversationID,
-        conversationName: receiver.fullName,
-        conversationAvatar: receiver.avatar,
         lastMessage: createNewMessage.messageID
       }
       //Xử lý song song
       await Promise.all([
-        conversationModel.addUserToConversation(userID, userConversationSender),
-        conversationModel.addUserToConversation(
-          receiverId,
-          userConversationReciever
-        )
+        conversationModel.addUserToConversation(userID, userConversation),
+        conversationModel.addUserToConversation(receiverId, userConversation)
       ])
 
       const userSockerID = getUserSocketId(userID)
@@ -242,28 +231,16 @@ const sendFiles = async (userID, receiverId, files) => {
         const messageResults = await Promise.all(uploadResults.map(saveMessage))
 
         if (messageResults) {
-          const userConversationReciever = {
+          const userConversation = {
             conversationID: createConversation.conversationID,
-            conversationName: userCurrent.fullName,
-            conversationAvatar: userCurrent.avatar,
             lastMessage: messageResults[messageResults.length - 1].messageID
           }
-          const userConversationSender = {
-            conversationID: createConversation.conversationID,
-            conversationName: receiver.fullName,
-            conversationAvatar: receiver.avatar,
-            lastMessage: messageResults[messageResults.length - 1].messageID
-          }
-
           //Xử lý song song
           await Promise.all([
-            conversationModel.addUserToConversation(
-              userID,
-              userConversationSender
-            ),
+            conversationModel.addUserToConversation(userID, userConversation),
             conversationModel.addUserToConversation(
               receiverId,
-              userConversationReciever
+              userConversation
             )
           ])
 
@@ -493,28 +470,17 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
             messageData
           )
 
-          const userConversationReciever = {
+          const userConversation = {
             conversationID: createConversation.conversationID,
-            conversationName: userCurrent.fullName,
-            conversationAvatar: userCurrent.avatar,
-            lastMessage: createNewMessage.messageID
-          }
-          const userConversationSender = {
-            conversationID: createConversation.conversationID,
-            conversationName: receiver.fullName,
-            conversationAvatar: receiver.avatar,
             lastMessage: createNewMessage.messageID
           }
 
           //Xử lý song song
           await Promise.all([
-            conversationModel.addUserToConversation(
-              userID,
-              userConversationSender
-            ),
+            conversationModel.addUserToConversation(userID, userConversation),
             conversationModel.addUserToConversation(
               receiverId,
-              userConversationReciever
+              userConversation
             )
           ])
 

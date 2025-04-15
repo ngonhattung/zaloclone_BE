@@ -2,6 +2,7 @@ import dynamoClient from '~/config/dynamodb'
 import { v4 as uuidv4 } from 'uuid'
 import moment from 'moment'
 import { messageModel } from './messageModel'
+import { userModel } from './userModel'
 const CONVERSATION_TABLE_NAME = 'conversations'
 const USERCONVERSATION_TABLE_NAME = 'userConversations'
 const haveTheyChatted = async (userID, receiverId) => {
@@ -74,8 +75,6 @@ const addUserToConversation = async (userID, userConversation) => {
       Item: {
         userID: userID,
         conversationID: userConversation.conversationID,
-        conversationName: userConversation.conversationName,
-        conversationAvatar: userConversation.conversationAvatar,
         lastMessageID: userConversation.lastMessage,
         destroy: false,
         createdAt: Date.now(),
@@ -133,8 +132,10 @@ const getConversations = async (userID) => {
         TableName: USERCONVERSATION_TABLE_NAME,
         IndexName: 'UserUpdatedAtIndex',
         KeyConditionExpression: 'userID = :userID',
+        FilterExpression: 'destroy = :destroyValue',
         ExpressionAttributeValues: {
-          ':userID': userID
+          ':userID': userID,
+          ':destroyValue': false
         },
         ScanIndexForward: false // sắp xếp giảm dần (mới nhất trước)
       })
@@ -209,6 +210,33 @@ const getConversationByName = async (conversationName) => {
   }
 }
 
+const getReceiverByConversationId = async (userID, conversationId) => {
+  try {
+    const params = {
+      TableName: USERCONVERSATION_TABLE_NAME,
+      IndexName: 'ConversationIdIndex',
+      KeyConditionExpression: 'conversationID = :conversationId',
+      ExpressionAttributeValues: {
+        ':conversationId': conversationId
+      }
+    }
+
+    const result = await dynamoClient.query(params).promise()
+
+    if (!result.Items || result.Items.length === 0) {
+      return null
+    }
+
+    const receiver = result.Items.find((item) => item.userID !== userID)
+
+    const receiverData = await userModel.findOneById(receiver.userID)
+
+    console.log('receiverData', receiverData)
+    return receiverData
+  } catch (error) {
+    throw error
+  }
+}
 //Group
 
 const createUserConversationGroup = async (userID, conversationID, members) => {
@@ -224,7 +252,7 @@ const createUserConversationGroup = async (userID, conversationID, members) => {
                 lastMessageID: null,
                 destroy: false,
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: Date.now()
               }
             }
           },
@@ -236,7 +264,7 @@ const createUserConversationGroup = async (userID, conversationID, members) => {
                 lastMessageID: null,
                 destroy: false,
                 createdAt: Date.now(),
-                updatedAt: null
+                updatedAt: Date.now()
               }
             }
           }))
@@ -307,5 +335,6 @@ export const conversationModel = {
   getConversationByName,
   addMembers,
   createUserConversationGroup,
-  leaveGroup
+  leaveGroup,
+  getReceiverByConversationId
 }

@@ -9,7 +9,12 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'Get list groups' })
 })
 
-Router.post('/create', authMiddleware.isAuthorized, groupController.createGroup) // tạo nhóm
+Router.post(
+  '/create',
+  authMiddleware.isAuthorized,
+  multerUploadMiddleware.upload.single('avatarGroup'), // tạo nhóm
+  groupController.createGroup
+) // tạo nhóm
 Router.post('/invite', authMiddleware.isAuthorized, groupController.inviteGroup) // mời vào nhóm
 Router.post('/leave', authMiddleware.isAuthorized, groupController.leaveGroup) // rời nhóm
 Router.post(

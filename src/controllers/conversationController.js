@@ -44,8 +44,24 @@ const checkConversationExist = async (req, res, next) => {
   }
 }
 
+const getReceiver = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params
+    const userID = req.jwtDecoded.userID
+    const result = await conversationService.getReceiverByConversationId(
+      userID,
+      conversationId
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const conversationController = {
   getConversations,
   getConversationByName,
-  checkConversationExist
+  checkConversationExist,
+  getReceiver
 }

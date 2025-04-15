@@ -36,20 +36,32 @@ const createGroupMembers = async (userID, groupID, members) => {
   try {
     const params = {
       RequestItems: {
-        [GROUP_MEMBER_TABLE_NAME]: members.map((member) => {
-          return {
+        [GROUP_MEMBER_TABLE_NAME]: [
+          {
             PutRequest: {
               Item: {
                 groupID,
-                memberID: member,
-                role: member === userID ? 'admin' : 'member',
+                userID: userID,
+                role: 'admin',
                 createdAt: Date.now(),
-                updatedAt: null,
+                updatedAt: Date.now(),
                 destroy: false
               }
             }
-          }
-        })
+          },
+          ...members.map((member) => ({
+            PutRequest: {
+              Item: {
+                groupID,
+                userID: member,
+                role: 'member',
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                destroy: false
+              }
+            }
+          }))
+        ]
       }
     }
 
@@ -72,7 +84,7 @@ const addMembers = async (groupID, members) => {
                 memberID: member,
                 role: 'member',
                 createdAt: Date.now(),
-                updatedAt: null,
+                updatedAt: Date.now(),
                 destroy: false
               }
             }
