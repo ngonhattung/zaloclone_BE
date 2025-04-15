@@ -40,8 +40,11 @@ const sendMessage = async (userID, receiverId, message) => {
         lastMessage: createNewMessage.messageID
       }
 
-      await conversationModel.updateLastMessage(userID, userConversation)
-      await conversationModel.updateLastMessage(receiverId, userConversation)
+      //Xu lý song song
+      await Promise.all([
+        conversationModel.updateLastMessage(userID, userConversation),
+        conversationModel.updateLastMessage(receiverId, userConversation)
+      ])
 
       const userSockerID = getUserSocketId(userID)
       const receiverSocketID = getReceiverSocketId(receiverId)
@@ -94,14 +97,14 @@ const sendMessage = async (userID, receiverId, message) => {
         conversationAvatar: receiver.avatar,
         lastMessage: createNewMessage.messageID
       }
-      await conversationModel.addUserToConversation(
-        userID,
-        userConversationSender
-      )
-      await conversationModel.addUserToConversation(
-        receiverId,
-        userConversationReciever
-      )
+      //Xử lý song song
+      await Promise.all([
+        conversationModel.addUserToConversation(userID, userConversationSender),
+        conversationModel.addUserToConversation(
+          receiverId,
+          userConversationReciever
+        )
+      ])
 
       const userSockerID = getUserSocketId(userID)
       const receiverSocketID = getReceiverSocketId(receiverId)
@@ -168,9 +171,13 @@ const sendFiles = async (userID, receiverId, files) => {
 
     //Nếu đã từng nhắn tin
     if (conversation) {
-      const promiseUpload = files.map((file) =>
-        S3Provider.streamUpload(file, userID)
-      )
+      const promiseUpload = files.map(async (file) => {
+        const s3Result = await S3Provider.streamUpload(file, userID)
+        return {
+          ...s3Result,
+          originalname: file.originalname
+        }
+      })
 
       try {
         const uploadResults = await Promise.all(promiseUpload)
@@ -182,11 +189,11 @@ const sendFiles = async (userID, receiverId, files) => {
             lastMessage: messageResults[messageResults.length - 1].messageID
           }
 
-          await conversationModel.updateLastMessage(userID, userConversation)
-          await conversationModel.updateLastMessage(
-            receiverId,
-            userConversation
-          )
+          //Xu lý song song
+          await Promise.all([
+            conversationModel.updateLastMessage(userID, userConversation),
+            conversationModel.updateLastMessage(receiverId, userConversation)
+          ])
 
           const userSockerID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
@@ -219,9 +226,13 @@ const sendFiles = async (userID, receiverId, files) => {
       )
 
       //Đưa upload file vào mảng promiseUpload
-      const promiseUpload = files.map((file) =>
-        S3Provider.streamUpload(file, userID)
-      )
+      const promiseUpload = files.map(async (file) => {
+        const s3Result = await S3Provider.streamUpload(file, userID)
+        return {
+          ...s3Result,
+          originalname: file.originalname
+        }
+      })
 
       try {
         //Upload file lên S3
@@ -244,14 +255,17 @@ const sendFiles = async (userID, receiverId, files) => {
             lastMessage: messageResults[messageResults.length - 1].messageID
           }
 
-          await conversationModel.addUserToConversation(
-            userID,
-            userConversationSender
-          )
-          await conversationModel.addUserToConversation(
-            receiverId,
-            userConversationReciever
-          )
+          //Xử lý song song
+          await Promise.all([
+            conversationModel.addUserToConversation(
+              userID,
+              userConversationSender
+            ),
+            conversationModel.addUserToConversation(
+              receiverId,
+              userConversationReciever
+            )
+          ])
 
           const userSockerID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
@@ -380,9 +394,12 @@ const deleteMessage = async (userID, messageID, conversationID) => {
   }
 }
 
-const shareMessage = async (userID, receiverIds, messageID) => {
+const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
   try {
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
     if (!message) {
       throw new ApiError(
         StatusCodes.NOT_FOUND,
@@ -410,11 +427,13 @@ const shareMessage = async (userID, receiverIds, messageID) => {
         const receiverSocketID = getReceiverSocketId(receiverId)
         let msg = {}
 
+        console.log('receiverId', receiverId)
         const conversationExist = await conversationModel.haveTheyChatted(
           userID,
           receiverId
         )
         const conversation = conversationExist?.convDetails
+        console.log('conversation', conversation)
         if (conversation) {
           // Đã có cuộc trò chuyện -> Gửi tin nhắn vào cuộc trò chuyện cũ
           const messageData = {
@@ -449,15 +468,18 @@ const shareMessage = async (userID, receiverIds, messageID) => {
           msg = { conversation, createNewMessage }
         } else {
           // Chưa có cuộc trò chuyện -> Tạo cuộc trò chuyện mới
+
+          const userCurrent = await userModel.getUserById(userID)
+          if (!userCurrent) {
+            throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+          }
+
           const receiver = await userModel.getUserById(receiverId)
           if (!receiver) {
             throw new ApiError(StatusCodes.NOT_FOUND, 'Receiver not found')
           }
           const createConversation =
-            await conversationModel.createNewConversation(
-              receiver.fullName,
-              'single'
-            )
+            await conversationModel.createNewConversation('single')
 
           const messageData = {
             conversationID: createConversation.conversationID,
@@ -471,17 +493,28 @@ const shareMessage = async (userID, receiverIds, messageID) => {
             messageData
           )
 
-          const userConversation = {
+          const userConversationReciever = {
             conversationID: createConversation.conversationID,
+            conversationName: userCurrent.fullName,
+            conversationAvatar: userCurrent.avatar,
+            lastMessage: createNewMessage.messageID
+          }
+          const userConversationSender = {
+            conversationID: createConversation.conversationID,
+            conversationName: receiver.fullName,
+            conversationAvatar: receiver.avatar,
             lastMessage: createNewMessage.messageID
           }
 
           //Xử lý song song
           await Promise.all([
-            conversationModel.addUserToConversation(userID, userConversation),
+            conversationModel.addUserToConversation(
+              userID,
+              userConversationSender
+            ),
             conversationModel.addUserToConversation(
               receiverId,
-              userConversation
+              userConversationReciever
             )
           ])
 

@@ -95,12 +95,17 @@ const deleteMessage = async (req, res, next) => {
   }
 }
 
-const shareMessage = (req, res, next) => {
+const shareMessage = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
-    const { messageID, receiverIds } = req.body
+    const { messageID, receiverIds, conversationID } = req.body
 
-    const result = messageService.shareMessage(userID, receiverIds, messageID)
+    const result = await messageService.shareMessage(
+      userID,
+      receiverIds,
+      messageID,
+      conversationID
+    )
 
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)

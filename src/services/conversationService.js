@@ -23,7 +23,17 @@ const getConversationByName = async (conversationName) => {
     throw error
   }
 }
+
+const checkConversationExist = async (userID, receiverId) => {
+  try {
+    const result = await conversationModel.haveTheyChatted(userID, receiverId)
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationService = {
   getConversations,
-  getConversationByName
+  getConversationByName,
+  checkConversationExist
 }

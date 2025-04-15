@@ -4,6 +4,8 @@ export const ALLOW_COMMON_FILE_TYPE = [
   'image/jpeg',
   'image/jpg',
   'image/gif',
+  'image/webp',
+  'image/svg+xml',
   'video/mp3',
   'video/mp4',
   'application/pdf',

@@ -23,14 +23,16 @@ const haveTheyChatted = async (userID, receiverId) => {
       })
       .promise()
 
-    const convSetUser = new Map(convUser.Items.map((item) => [item.SK, item]))
+    // Chuyển đổi danh sách cuộc hội thoại thành Map để dễ dàng tìm kiếm
+    const convSetUser = new Map(
+      convUser.Items.map((item) => [item.conversationID, item])
+    )
     const convSetReceiver = new Map(
-      convReceiver.Items.map((item) => [item.SK, item])
+      convReceiver.Items.map((item) => [item.conversationID, item])
     )
 
     for (let [convId, convDetails] of convSetUser) {
       if (convSetReceiver.has(convId)) {
-        console.log('convDetails', convDetails)
         return { convDetails } // Trả về thông tin conversation
       }
     }
