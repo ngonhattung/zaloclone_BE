@@ -134,7 +134,7 @@ const deleteMessage = async (req, res, next) => {
 const shareMessage = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
-    const { messageID, groupIDs } = req.body
+    const { messageID, groupIDs, receiverIds, conversationID } = req.body
     const result = await groupService.shareMessage(userID, messageID, groupIDs)
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)

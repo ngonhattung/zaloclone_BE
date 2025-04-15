@@ -319,6 +319,13 @@ const revokeMessage = async (
       )
     }
 
+    if (message.senderDelete === true) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể thu hồi tin nhắn đã xóa'
+      )
+    }
+
     await messageModel.revokeMessage(messageID, conversationID)
     const messageAfterRevoke = await messageModel.findMessageByID(
       messageID,
@@ -358,7 +365,14 @@ const deleteMessage = async (userID, messageID, conversationID) => {
     if (message.senderID !== userID) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'You are not authorized to delete this message'
+        'Bạn không có quyền xóa tin nhắn này'
+      )
+    }
+
+    if (message.revoke === true) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể xóa tin nhắn đã thu hồi'
       )
     }
 

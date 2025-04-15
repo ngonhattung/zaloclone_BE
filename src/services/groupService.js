@@ -5,7 +5,7 @@ import { groupModel } from '~/models/groupModel.js'
 import { messageModel } from '~/models/messageModel'
 import { getReceiverSocketId, getUserSocketId, io } from '~/sockets/socket'
 import { S3Provider } from '~/providers/S3Provider'
-
+import { userModel } from '~/models/userModel.js'
 const createGroup = async (userID, groupName, groupAvatar, members) => {
   try {
     const conversation = await conversationModel.createNewConversation('group')
@@ -527,11 +527,9 @@ const revokeMessage = async (userID, messageID, groupID) => {
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
       )
-    } else if (conversation.isDestroy) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
     }
 
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(messageID, groupID)
     if (!message) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Tin nhắn không tồn tại')
     }
@@ -539,18 +537,28 @@ const revokeMessage = async (userID, messageID, groupID) => {
     if (message.senderID !== userID) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'You are not authorized to revoke this message'
+        'Bạn không có quyền thu hồi tin nhắn này'
       )
     }
 
-    await messageModel.revokeMessage(messageID)
+    if (message.senderDelete === true) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể thu hồi tin nhắn đã xóa'
+      )
+    }
 
-    const messageContent = 'Tin nhắn đã bị thu hồi'
+    await messageModel.revokeMessage(messageID, groupID)
+
+    const messageAfterRevoke = await messageModel.findMessageByID(
+      messageID,
+      groupID
+    )
 
     // gửi thông báo cho các thành viên trong nhóm
     io.to(conversation.conversationID).emit(
       'revokeMessageGroup',
-      messageContent
+      messageAfterRevoke
     )
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
@@ -558,9 +566,7 @@ const revokeMessage = async (userID, messageID, groupID) => {
         io.to(participantSocketId).emit('notification')
       }
     })
-    return {
-      msg: messageContent
-    }
+    return messageAfterRevoke
   } catch (error) {
     throw error
   }
@@ -581,11 +587,9 @@ const deleteMessage = async (userID, messageID, groupID) => {
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
       )
-    } else if (conversation.isDestroy) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
     }
 
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(messageID, groupID)
     if (!message) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Tin nhắn không tồn tại')
     }
@@ -593,28 +597,51 @@ const deleteMessage = async (userID, messageID, groupID) => {
     if (message.senderID !== userID) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'You are not authorized to delete this message'
+        'Bạn không có quyền xóa tin nhắn này'
+      )
+    }
+    if (message.revoke === true) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể xóa tin nhắn đã thu hồi'
       )
     }
 
-    await messageModel.deleteMessage(messageID)
+    await messageModel.deleteMessage(messageID, groupID)
+    const messageAfterDelete = await messageModel.findMessageByID(
+      messageID,
+      groupID
+    )
 
     // gửi thông báo cho các thành viên trong nhóm
-    io.to(conversation.conversationID).emit('deleteMessageGroup', messageID)
+    io.to(conversation.conversationID).emit(
+      'deleteMessageGroup',
+      messageAfterDelete
+    )
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
         io.to(participantSocketId).emit('notification')
       }
     })
+    return messageAfterDelete
   } catch (error) {
     throw error
   }
 }
 
-const shareMessage = async (userID, messageID, groupIDs) => {
+const shareMessage = async (
+  userID,
+  messageID,
+  groupIDs,
+  receiverIds,
+  conversationID
+) => {
   try {
-    const message = await messageModel.findMessageByID(messageID)
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
     if (!message) {
       throw new ApiError(
         StatusCodes.NOT_FOUND,
@@ -622,60 +649,189 @@ const shareMessage = async (userID, messageID, groupIDs) => {
       )
     }
 
-    const groupSharePromises = groupIDs.map(async (groupID) => {
-      const groupMembers = await groupModel.findGroupMembersByID(groupID)
-      if (!groupMembers || groupMembers.length === 0) {
-        throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
-      }
-      const conversation = await conversationModel.findConversationByID(groupID)
-      if (!conversation) {
-        throw new ApiError(
-          StatusCodes.NOT_FOUND,
-          'Cuộc trò chuyện không tồn tại'
-        )
-      } else if (conversation.conversationType !== 'group') {
-        throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          'Cuộc trò chuyện không phải là nhóm'
-        )
-      }
+    const results = []
+    const errors = []
 
-      const messageData = {
-        conversationID: conversation.conversationID,
-        senderID: userID,
-        content: message.messageContent,
-        url: message.messageUrl,
-        type: message.messageType
-      }
-
-      const createNewMessage = await messageModel.createNewMessage(messageData)
-
-      const userConversation = {
-        conversationID: conversation.conversationID,
-        lastMessage: createNewMessage.messageID
-      }
-
-      const updateLastMessagePromise = groupMembers.map((member) =>
-        conversationModel.updateLastMessage(member.memberID, userConversation)
+    if (receiverIds && receiverIds.length > 0) {
+      const individualResults = await shareWithIndividuals(
+        userID,
+        receiverIds,
+        message
       )
-      await Promise.all(updateLastMessagePromise)
+      results.push(...individualResults.results)
+      errors.push(...individualResults.errors)
+    }
 
-      // Emit socket
-      io.to(conversation.conversationID).emit('shareMessageGroup', message)
-      groupMembers.forEach((member) => {
-        const participantSocketId = getReceiverSocketId(member.memberID)
-        if (participantSocketId) {
-          io.to(participantSocketId).emit('notification')
-        }
-      })
-    })
+    if (groupIDs && groupIDs.length > 0) {
+      const groupResults = await shareWithGroups(userID, groupIDs, message)
+      results.push(...groupResults)
+    }
 
-    await Promise.all(groupSharePromises)
-
-    return { msg: message }
+    return results
   } catch (error) {
     throw error
   }
+}
+
+//Hàm chia sẽ tin nhắn cho cá nhân
+const shareWithIndividuals = async (userID, receiverIds, message) => {
+  const results = []
+  const errors = []
+
+  receiverIds = receiverIds.filter((id) => id !== userID)
+  if (receiverIds.length === 0) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'No valid receivers to share message'
+    )
+  }
+
+  const userSocketID = getUserSocketId(userID)
+
+  for (const receiverId of receiverIds) {
+    try {
+      const receiverSocketID = getReceiverSocketId(receiverId)
+      const existingConversation = await conversationModel.haveTheyChatted(
+        userID,
+        receiverId
+      )
+
+      if (existingConversation?.convDetails) {
+        const conversation = existingConversation.convDetails
+        const newMessage = await createMessage(
+          userID,
+          conversation.conversationID,
+          message
+        )
+        const userConversation = {
+          conversationID: conversation.conversationID,
+          lastMessage: newMessage.messageID
+        }
+
+        await Promise.all([
+          conversationModel.updateLastMessage(userID, userConversation),
+          conversationModel.updateLastMessage(receiverId, userConversation)
+        ])
+
+        if (userSocketID) io.to(userSocketID).emit('notification')
+        if (receiverSocketID && userSocketID) {
+          io.to(receiverSocketID)
+            .to(userSocketID)
+            .emit('newMessage', newMessage)
+          io.to(receiverSocketID).emit('notification')
+        }
+
+        results.push({ conversation, createNewMessage: newMessage })
+      } else {
+        const [userCurrent, receiver] = await Promise.all([
+          userModel.getUserById(userID),
+          userModel.getUserById(receiverId)
+        ])
+        if (!userCurrent || !receiver) {
+          throw new ApiError(
+            StatusCodes.NOT_FOUND,
+            'User or receiver not found'
+          )
+        }
+
+        const newConversation = await conversationModel.createNewConversation(
+          'single'
+        )
+        const newMessage = await createMessage(
+          userID,
+          newConversation.conversationID,
+          message
+        )
+
+        const userConversation = {
+          conversationID: newConversation.conversationID,
+          lastMessage: newMessage.messageID
+        }
+
+        await Promise.all([
+          conversationModel.addUserToConversation(userID, userConversation),
+          conversationModel.addUserToConversation(receiverId, userConversation)
+        ])
+
+        if (userSocketID)
+          io.to(userSocketID).emit('newConversation', newConversation)
+        if (receiverSocketID && userSocketID) {
+          io.to(receiverSocketID)
+            .to(userSocketID)
+            .emit('newMessage', newMessage)
+        }
+
+        results.push({
+          createConversation: newConversation,
+          createNewMessage: newMessage
+        })
+      }
+    } catch (error) {
+      errors.push({ receiverId, error: error.message })
+    }
+  }
+
+  return { results, errors }
+}
+
+//Hàm chia sẽ tin nhắn cho nhóm
+const shareWithGroups = async (userID, groupIDs, message) => {
+  const results = []
+
+  for (const groupID of groupIDs) {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers || groupMembers.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(groupID)
+    if (!conversation || conversation.conversationType !== 'group') {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cuộc trò chuyện không hợp lệ'
+      )
+    }
+
+    const newMessage = await createMessage(
+      userID,
+      conversation.conversationID,
+      message
+    )
+    const userConversation = {
+      conversationID: conversation.conversationID,
+      lastMessage: newMessage.messageID
+    }
+
+    await Promise.all(
+      groupMembers.map((member) =>
+        conversationModel.updateLastMessage(member.userID, userConversation)
+      )
+    )
+
+    io.to(conversation.conversationID).emit('shareMessageGroup', message)
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
+    results.push({ conversation, createNewMessage: newMessage })
+  }
+
+  return results
+}
+
+//Tạo tin nhắn mới
+const createMessage = async (senderID, conversationID, message) => {
+  const messageData = {
+    conversationID,
+    senderID,
+    content: message.messageContent,
+    url: message.messageUrl,
+    type: message.messageType
+  }
+  return await messageModel.createNewMessage(messageData)
 }
 
 export const groupService = {
