@@ -97,9 +97,10 @@ const sendMessage = async (req, res, next) => {
 const sendFiles = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
-    const { groupID } = req.params
+    const { groupID } = req.body
     const files = req.files // mảng các file đã được upload
     const result = await groupService.sendFiles(userID, files, groupID)
+
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)
   } catch (error) {

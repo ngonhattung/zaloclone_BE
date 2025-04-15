@@ -391,15 +391,14 @@ const sendMessage = async (userID, message, groupID) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
     }
     const conversation = await conversationModel.findConversationByID(groupID)
+
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
-    } else if (conversation.type !== 'group') {
+    } else if (conversation.conversationType !== 'group') {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
       )
-    } else if (conversation.isDestroy) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
     }
 
     const messageData = {
@@ -415,7 +414,7 @@ const sendMessage = async (userID, message, groupID) => {
     }
 
     const updateLastMessagePromise = groupMembers.map((member) =>
-      conversationModel.updateLastMessage(member.memberID, userConversation)
+      conversationModel.updateLastMessage(member.userID, userConversation)
     )
 
     await Promise.all(updateLastMessagePromise)
@@ -431,9 +430,7 @@ const sendMessage = async (userID, message, groupID) => {
         io.to(participantSocketId).emit('notification')
       }
     })
-    return {
-      msg: messageData
-    }
+    return messageData
   } catch (error) {
     throw error
   }
@@ -449,13 +446,11 @@ const sendFiles = async (userID, files, groupID) => {
     const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
-    } else if (conversation.type !== 'group') {
+    } else if (conversation.conversationType !== 'group') {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
       )
-    } else if (conversation.isDestroy) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
     }
 
     const saveMessage = async (result) => {
@@ -478,9 +473,13 @@ const sendFiles = async (userID, files, groupID) => {
       }
     }
 
-    const promiseUpload = files.map((file) =>
-      S3Provider.streamUpload(file, userID)
-    )
+    const promiseUpload = files.map(async (file) => {
+      const s3Result = await S3Provider.streamUpload(file, userID)
+      return {
+        ...s3Result,
+        originalname: file.originalname
+      }
+    })
 
     const uploadResults = await Promise.all(promiseUpload)
     const messageResults = await Promise.all(uploadResults.map(saveMessage))
@@ -492,7 +491,7 @@ const sendFiles = async (userID, files, groupID) => {
       }
 
       const updateLastMessagePromise = groupMembers.map((member) =>
-        conversationModel.updateLastMessage(member.memberID, userConversation)
+        conversationModel.updateLastMessage(member.userID, userConversation)
       )
       await Promise.all(updateLastMessagePromise)
 
@@ -508,6 +507,7 @@ const sendFiles = async (userID, files, groupID) => {
         }
       })
     }
+    return messageResults
   } catch (error) {
     throw error
   }
@@ -522,7 +522,7 @@ const revokeMessage = async (userID, messageID, groupID) => {
     const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
-    } else if (conversation.type !== 'group') {
+    } else if (conversation.conversationType !== 'group') {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
@@ -576,7 +576,7 @@ const deleteMessage = async (userID, messageID, groupID) => {
     const conversation = await conversationModel.findConversationByID(groupID)
     if (!conversation) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
-    } else if (conversation.type !== 'group') {
+    } else if (conversation.conversationType !== 'group') {
       throw new ApiError(
         StatusCodes.BAD_REQUEST,
         'Cuộc trò chuyện không phải là nhóm'
@@ -633,15 +633,11 @@ const shareMessage = async (userID, messageID, groupIDs) => {
           StatusCodes.NOT_FOUND,
           'Cuộc trò chuyện không tồn tại'
         )
-      }
-      if (conversation.type !== 'group') {
+      } else if (conversation.conversationType !== 'group') {
         throw new ApiError(
           StatusCodes.BAD_REQUEST,
           'Cuộc trò chuyện không phải là nhóm'
         )
-      }
-      if (conversation.isDestroy) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, 'Cuộc trò chuyện đã bị xóa')
       }
 
       const messageData = {

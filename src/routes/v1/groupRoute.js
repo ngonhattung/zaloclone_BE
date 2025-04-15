@@ -34,13 +34,13 @@ Router.post(
 //   groupController.revokeAdmin
 // ) // thu hồi quyền admin
 
-Router.route('/messages/send/:conversationId').post(
+Router.route('/messages/send').post(
   //gửi tin nhắn text
   authMiddleware.isAuthorized,
   groupController.sendMessage
 )
 
-Router.route('/messages/send/files/:conversationId').post(
+Router.route('/messages/send/files').post(
   //gửi tin nhắn files
   authMiddleware.isAuthorized,
   multerUploadMiddleware.upload.array('files', 10),
