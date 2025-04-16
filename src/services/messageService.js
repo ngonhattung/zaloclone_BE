@@ -46,16 +46,18 @@ const sendMessage = async (userID, receiverId, message) => {
         conversationModel.updateLastMessage(receiverId, userConversation)
       ])
 
-      const userSockerID = getUserSocketId(userID)
+      const userSocketID = getUserSocketId(userID)
       const receiverSocketID = getReceiverSocketId(receiverId)
 
-      if (receiverSocketID && userSockerID) {
+      if (receiverSocketID && userSocketID) {
         io.to(receiverSocketID)
-          .to(userSockerID)
+          .to(userSocketID)
           .emit('newMessage', createNewMessage)
-        io.to(userSockerID).to(receiverSocketID).emit('notification')
+        io.to(userSocketID).to(receiverSocketID).emit('notification')
+      } else {
+        io.to(userSocketID).emit('notification')
+        io.to(userSocketID).emit('newMessage', createNewMessage)
       }
-      io.to(userSockerID).emit('notification')
 
       msg = { conversation, createNewMessage }
     } else {
@@ -97,22 +99,23 @@ const sendMessage = async (userID, receiverId, message) => {
         conversationModel.addUserToConversation(receiverId, userConversation)
       ])
 
-      const userSockerID = getUserSocketId(userID)
+      const userSocketID = getUserSocketId(userID)
       const receiverSocketID = getReceiverSocketId(receiverId)
 
-      if (userSockerID && receiverSocketID) {
+      if (userSocketID && receiverSocketID) {
         // Gửi conversation mới tới cả 2 người
         io.to(receiverSocketID)
-          .to(userSockerID)
-          .emit('newConversation', createConversation)
+          .to(userSocketID)
+          .emit('notification', createConversation) // sửa thành notification
 
         // Gửi tin nhắn mới tới người nhận
         io.to(receiverSocketID)
-          .to(userSockerID)
+          .to(userSocketID)
           .emit('newMessage', createNewMessage)
       } else {
         // Gửi conversation mới tới người gửi
-        io.to(userSockerID).emit('newConversation', createConversation)
+        io.to(userSocketID).emit('notification', createConversation) // sửa thành notiification
+        io.to(userSocketID).emit('newMessage', createNewMessage) // Thêm thông báo
       }
 
       msg = { createConversation, createNewMessage }
@@ -188,16 +191,18 @@ const sendFiles = async (userID, receiverId, files) => {
             conversationModel.updateLastMessage(receiverId, userConversation)
           ])
 
-          const userSockerID = getUserSocketId(userID)
+          const userSocketID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
 
-          if (receiverSocketID && userSockerID) {
+          if (receiverSocketID && userSocketID) {
             io.to(receiverSocketID)
-              .to(userSockerID)
+              .to(userSocketID)
               .emit('newMessage', messageResults)
-            io.to(userSockerID).to(receiverSocketID).emit('notification')
+            io.to(userSocketID).to(receiverSocketID).emit('notification')
+          } else {
+            io.to(userSocketID).emit('notification')
+            io.to(userSocketID).emit('newMessage', messageResults)
           }
-          io.to(userSockerID).emit('notification')
 
           msg = { conversation, messageResults }
         }
@@ -250,19 +255,23 @@ const sendFiles = async (userID, receiverId, files) => {
             )
           ])
 
-          const userSockerID = getUserSocketId(userID)
+          const userSocketID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
 
-          if (userSockerID && receiverSocketID) {
+          if (userSocketID && receiverSocketID) {
+            // Gửi conversation mới tới cả 2 người
             io.to(receiverSocketID)
-              .to(userSockerID)
-              .emit('newConversation', createConversation)
+              .to(userSocketID)
+              .emit('notification', createConversation) // sửa thành notification
 
+            // Gửi tin nhắn mới tới người nhận
             io.to(receiverSocketID)
-              .to(userSockerID)
+              .to(userSocketID)
               .emit('newMessage', messageResults)
           } else {
-            io.to(userSockerID).emit('newConversation', createConversation)
+            // Gửi conversation mới tới người gửi
+            io.to(userSocketID).emit('notification', createConversation) // sửa thành notiification
+            io.to(userSocketID).emit('newMessage', messageResults) // Thêm thông báo
           }
 
           msg = { createConversation, messageResults }
@@ -339,6 +348,7 @@ const revokeMessage = async (
         .emit('revokeMessage', messageAfterRevoke)
       io.to(receiverSocketId).to(userSocketId).emit('notification')
     } else {
+      io.to(userSocketId).emit('revokeMessage', messageAfterRevoke)
       io.to(userSocketId).emit('notification')
     }
 
@@ -465,8 +475,10 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
               .to(userSocketID)
               .emit('newMessage', createNewMessage)
             io.to(userSocketID).to(receiverSocketID).emit('notification')
+          } else {
+            io.to(userSocketID).emit('notification')
+            io.to(userSocketID).emit('newMessage', createNewMessage)
           }
-          io.to(userSocketID).emit('notification')
 
           msg = { conversation, createNewMessage }
         } else {
