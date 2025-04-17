@@ -194,14 +194,14 @@ const sendFiles = async (userID, receiverId, files) => {
           const userSocketID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
 
-          if (receiverSocketID && userSocketID) {
-            io.to(receiverSocketID)
-              .to(userSocketID)
-              .emit('newMessage', messageResults)
-            io.to(userSocketID).to(receiverSocketID).emit('notification')
-          } else {
-            io.to(userSocketID).emit('notification')
+          if (receiverSocketID) {
+            io.to(receiverSocketID).emit('newMessage', messageResults)
+            io.to(receiverSocketID).emit('notification')
+          }
+
+          if (userSocketID) {
             io.to(userSocketID).emit('newMessage', messageResults)
+            io.to(userSocketID).emit('notification')
           }
 
           msg = { conversation, messageResults }
@@ -258,20 +258,16 @@ const sendFiles = async (userID, receiverId, files) => {
           const userSocketID = getUserSocketId(userID)
           const receiverSocketID = getReceiverSocketId(receiverId)
 
-          if (userSocketID && receiverSocketID) {
-            // Gửi conversation mới tới cả 2 người
-            io.to(receiverSocketID)
-              .to(userSocketID)
-              .emit('notification', createConversation) // sửa thành notification
+          if (receiverSocketID) {
+            io.to(receiverSocketID).emit('newMessage', messageResults)
+            io.to(receiverSocketID).emit('newConversation', createConversation)
+            io.to(receiverSocketID).emit('notification')
+          }
 
-            // Gửi tin nhắn mới tới người nhận
-            io.to(receiverSocketID)
-              .to(userSocketID)
-              .emit('newMessage', messageResults)
-          } else {
-            // Gửi conversation mới tới người gửi
-            io.to(userSocketID).emit('notification', createConversation) // sửa thành notiification
-            io.to(userSocketID).emit('newMessage', messageResults) // Thêm thông báo
+          if (userSocketID) {
+            io.to(userSocketID).emit('newMessage', messageResults)
+            io.to(userSocketID).emit('newConversation', createConversation)
+            io.to(userSocketID).emit('notification')
           }
 
           msg = { createConversation, messageResults }
