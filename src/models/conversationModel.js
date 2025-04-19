@@ -145,8 +145,6 @@ const getConversations = async (userID) => {
       return [] // Không có cuộc trò chuyện nào
     }
 
-    console.log('result.Items', result.Items)
-
     const lastMessageIDs = result.Items.map(
       (item) => item.lastMessageID
     ).filter((id) => id)
@@ -178,13 +176,11 @@ const getConversations = async (userID) => {
       }, {})
     }
 
-    console.log('messageMap', messageMap)
     // Kết hợp dữ liệu
     const conversations = result.Items.map((item) => ({
       conversation: item,
       lastMessage: messageMap[item.lastMessageID] || null
     }))
-    console.log('Conversations:', conversations)
     return conversations
   } catch (error) {
     throw error
@@ -231,7 +227,6 @@ const getReceiverByConversationId = async (userID, conversationId) => {
 
     const receiverData = await userModel.findOneById(receiver.userID)
 
-    console.log('receiverData', receiverData)
     return receiverData
   } catch (error) {
     throw error

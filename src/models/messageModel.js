@@ -40,7 +40,6 @@ const findMessageByID = async (messageID, conversationID) => {
         messageID: messageID
       }
     }
-    console.log('params findMessageByID', params)
     const result = await dynamoClient.get(params).promise()
     return result.Item
   } catch (error) {

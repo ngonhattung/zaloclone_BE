@@ -16,5 +16,11 @@ export const ALLOW_COMMON_FILE_TYPE = [
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.rar',
-  'application/zip'
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/x-zip',
+  'application/x-rar-compressed',
+  'application/x-compress-zip',
+  'application/x-compress-rar',
+  'application/x-compress'
 ]

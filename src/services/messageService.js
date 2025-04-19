@@ -434,13 +434,11 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
         const receiverSocketID = getReceiverSocketId(receiverId)
         let msg = {}
 
-        console.log('receiverId', receiverId)
         const conversationExist = await conversationModel.haveTheyChatted(
           userID,
           receiverId
         )
         const conversation = conversationExist?.convDetails
-        console.log('conversation', conversation)
         if (conversation) {
           // Đã có cuộc trò chuyện -> Gửi tin nhắn vào cuộc trò chuyện cũ
           const messageData = {

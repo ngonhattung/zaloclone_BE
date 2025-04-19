@@ -6,7 +6,6 @@ const getConversations = async (req, res, next) => {
   try {
     const userID = req.jwtDecoded.userID
     const result = await conversationService.getConversations(userID)
-    console.log('result', result)
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)
   } catch (error) {
