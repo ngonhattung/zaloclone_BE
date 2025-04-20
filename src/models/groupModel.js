@@ -1,7 +1,6 @@
-import Joi from 'joi'
 import dynamoClient from '~/config/dynamodb'
-import { v4 as uuidv4 } from 'uuid'
-import moment from 'moment'
+
+import { userModel } from '~/models/userModel'
 
 const GROUP_TABLE_NAME = 'groups'
 const GROUP_MEMBER_TABLE_NAME = 'groupMembers'
@@ -264,6 +263,80 @@ const getAllGroups = async () => {
     throw new Error(error)
   }
 }
+
+const getGroupInfo = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_TABLE_NAME,
+      Key: {
+        groupID
+      }
+    }
+
+    const result = await dynamoClient.get(params).promise()
+    return result.Item
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const getMembersInGroup = async (groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      KeyConditionExpression: 'groupID = :groupID',
+      ExpressionAttributeValues: {
+        ':groupID': groupID
+      }
+    }
+
+    const groups = await dynamoClient.query(params).promise()
+    const groupItems = groups.Items || []
+
+    if (!groupItems.length) return []
+
+    const userIDs = groupItems.map((item) => item.userID)
+
+    const userParams = {
+      RequestItems: {
+        [userModel.USER_TABLE_NAME]: {
+          Keys: userIDs.map((userID) => ({ userID }))
+        }
+      }
+    }
+
+    const users = await dynamoClient.batchGet(userParams).promise()
+    const userList = users.Responses?.[userModel.USER_TABLE_NAME] || []
+
+    const userMap = new Map(
+      userList.map((user) => [
+        user.userID,
+        {
+          userID: user.userID,
+          phoneNumber: user.phoneNumber,
+          fullName: user.fullName,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
+      ])
+    )
+
+    const members = groupItems
+      .filter((item) => !item.destroy)
+      .map((item) => ({
+        groupID: item.groupID,
+        role: item.role,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        userInfo: userMap.get(item.userID) || null
+      }))
+
+    return members
+  } catch (error) {
+    throw error
+  }
+}
 export const groupModel = {
   create,
   createGroupMembers,
@@ -275,5 +348,7 @@ export const groupModel = {
   grantAdmin,
   revokeAdmin,
   getMyGroups,
-  getAllGroups
+  getAllGroups,
+  getGroupInfo,
+  getMembersInGroup
 }

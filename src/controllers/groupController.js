@@ -163,6 +163,28 @@ const getAllGroups = async (req, res, next) => {
     next(error)
   }
 }
+
+const getGroupInfo = async (req, res, next) => {
+  try {
+    const { groupID } = req.params
+    const result = await groupService.getGroupInfo(groupID)
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getMembersInGroup = async (req, res, next) => {
+  try {
+    const { groupID } = req.params
+    const result = await groupService.getMembersInGroup(groupID)
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
   inviteGroup,
@@ -176,5 +198,7 @@ export const groupController = {
   deleteMessage,
   shareMessage,
   getMyGroups,
-  getAllGroups
+  getAllGroups,
+  getGroupInfo,
+  getMembersInGroup
 }

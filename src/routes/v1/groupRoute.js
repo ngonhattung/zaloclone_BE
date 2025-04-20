@@ -81,4 +81,18 @@ Router.get(
   authMiddleware.isAuthorized,
   groupController.getAllGroups
 )
+
+Router.get(
+  // lấy thông tin nhóm theo id nhóm
+  '/group/:groupID',
+  authMiddleware.isAuthorized,
+  groupController.getGroupInfo
+)
+
+Router.get(
+  // lấy danh sách thành viên trong nhóm theo id nhóm
+  '/members/:groupID',
+  authMiddleware.isAuthorized,
+  groupController.getMembersInGroup
+)
 export const groupRoutes = Router

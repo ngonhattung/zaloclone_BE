@@ -857,6 +857,30 @@ const getAllGroups = async () => {
     throw error
   }
 }
+
+const getGroupInfo = async (groupID) => {
+  try {
+    const group = await groupModel.getGroupInfo(groupID)
+    if (!group || group.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Không có nhóm nào')
+    }
+    return group
+  } catch (error) {
+    throw error
+  }
+}
+
+const getMembersInGroup = async (groupID) => {
+  try {
+    const groupMembers = await groupModel.getMembersInGroup(groupID)
+    if (!groupMembers || groupMembers.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Không có thành viên nào')
+    }
+    return groupMembers
+  } catch (error) {
+    throw error
+  }
+}
 export const groupService = {
   createGroup,
   inviteGroup,
@@ -870,5 +894,7 @@ export const groupService = {
   deleteMessage,
   shareMessage,
   getMyGroups,
-  getAllGroups
+  getAllGroups,
+  getGroupInfo,
+  getMembersInGroup
 }
