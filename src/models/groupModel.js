@@ -14,7 +14,7 @@ const create = async (conversationID, groupName, groupAvatar) => {
       groupName,
       groupAvatar,
       createdAt: Date.now(),
-      updatedAt: null,
+      updatedAt: Date.now(),
       destroy: false
     }
 
