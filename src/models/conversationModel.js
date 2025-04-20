@@ -145,6 +145,36 @@ const getConversations = async (userID) => {
       return [] // Không có cuộc trò chuyện nào
     }
 
+    const conversationIDs = result.Items.map(
+      (item) => item.conversationID
+    ).filter((id) => id)
+
+    // Truy vấn tất cả cuộc trò chuyện
+    let conversationMap = {}
+    if (conversationIDs.length > 0) {
+      const conversationKeys = result.Items.map((item) => ({
+        conversationID: item.conversationID
+      })).filter((key) => key.conversationID)
+
+      const conversationData = await dynamoClient
+        .batchGet({
+          RequestItems: {
+            [CONVERSATION_TABLE_NAME]: {
+              Keys: conversationKeys
+            }
+          }
+        })
+        .promise()
+
+      // Chuyển thành Map để truy xuất nhanh
+      conversationMap = (
+        conversationData.Responses[CONVERSATION_TABLE_NAME] || []
+      ).reduce((acc, conv) => {
+        acc[conv.conversationID] = conv
+        return acc
+      }, {})
+    }
+
     const lastMessageIDs = result.Items.map(
       (item) => item.lastMessageID
     ).filter((id) => id)
@@ -178,7 +208,12 @@ const getConversations = async (userID) => {
 
     // Kết hợp dữ liệu
     const conversations = result.Items.map((item) => ({
-      conversation: item,
+      conversation: {
+        ...item,
+        conversationType: conversationMap[item.conversationID]
+          ? conversationMap[item.conversationID].conversationType
+          : null
+      },
       lastMessage: messageMap[item.lastMessageID] || null
     }))
     return conversations
