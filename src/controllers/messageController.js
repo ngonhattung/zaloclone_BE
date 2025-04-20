@@ -129,11 +129,72 @@ const getMessagesByConversation = async (req, res, next) => {
   }
 }
 
+const replyMessage = async (req, res, next) => {
+  try {
+    const { receiverId } = req.params
+    const userID = req.jwtDecoded.userID
+    const { message, replyMessageID, conversationID } = req.body
+
+    const result = await messageService.replyMessage(
+      userID,
+      receiverId,
+      message,
+      replyMessageID,
+      conversationID
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const addReactionToMessage = async (req, res, next) => {
+  try {
+    const { receiverId } = req.params
+    const { messageID, conversationID, messageEmoji } = req.body
+    const userID = req.jwtDecoded.userID
+
+    const result = await messageService.addReactionToMessage(
+      userID,
+      receiverId,
+      messageID,
+      conversationID,
+      messageEmoji
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const searchMessageByContent = async (req, res, next) => {
+  try {
+    const { conversationID } = req.params
+    const { content } = req.body
+
+    const result = await messageService.searchMessageByContent(
+      conversationID,
+      content
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const messageController = {
   sendMessage,
   sendFiles,
   revokeMessage,
   shareMessage,
   getMessagesByConversation,
-  deleteMessage
+  deleteMessage,
+  replyMessage,
+  addReactionToMessage,
+  searchMessageByContent
 }

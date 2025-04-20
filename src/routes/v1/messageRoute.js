@@ -55,4 +55,24 @@ Router.get(
   authMiddleware.isAuthorized,
   messageController.getMessagesByConversation
 )
+
+Router.post(
+  '/send/reply/:receiverId',
+  //trả lời tin nhắn
+  authMiddleware.isAuthorized,
+  messageController.replyMessage
+)
+
+Router.post(
+  //thêm phản hồi cho tin nhắn
+  '/add/reaction/:receiverId',
+  authMiddleware.isAuthorized,
+  messageController.addReactionToMessage
+)
+
+Router.get(
+  '/search/:conversationID',
+  authMiddleware.isAuthorized,
+  messageController.searchMessageByContent
+)
 export const messageRoutes = Router

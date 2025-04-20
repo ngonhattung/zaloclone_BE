@@ -145,18 +145,21 @@ const sendFiles = async (userID, receiverId, files) => {
     let msg = {}
 
     //Lưu message vào database
-    const saveMessage = async (result) => {
+    const saveMessage = async (uploadResults) => {
       try {
-        const fileParts = result.originalname.split('.')
-        const fileType =
-          fileParts.length > 1 ? fileParts[fileParts.length - 1] : 'unknown'
-
         const messageData = {
           conversationID: conversation.conversationID,
           senderID: userID,
-          content: result.originalname,
-          url: result.Location,
-          type: fileType
+          content: JSON.stringify(
+            uploadResults.map((file) => file.originalname)
+          ), // Mảng tên file
+          url: JSON.stringify(uploadResults.map((file) => file.Location)), // Mảng URL
+          type: JSON.stringify(
+            uploadResults.map((file) => {
+              const parts = file.originalname.split('.')
+              return parts.length > 1 ? parts[parts.length - 1] : 'unknown'
+            })
+          ) // Mảng loại file
         }
 
         return await messageModel.createNewMessage(messageData)
@@ -177,12 +180,12 @@ const sendFiles = async (userID, receiverId, files) => {
 
       try {
         const uploadResults = await Promise.all(promiseUpload)
-        const messageResults = await Promise.all(uploadResults.map(saveMessage))
+        const messageResults = await saveMessage(uploadResults)
 
         if (messageResults) {
           const userConversation = {
             conversationID: conversation.conversationID,
-            lastMessage: messageResults[messageResults.length - 1].messageID
+            lastMessage: messageResults.messageID
           }
 
           //Xu lý song song
@@ -571,11 +574,154 @@ const getMessagesByConversation = async (conversationID) => {
     throw error
   }
 }
+
+const replyMessage = async (
+  userID,
+  receiverId,
+  message,
+  replyMessageID,
+  conversationID
+) => {
+  try {
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    }
+
+    const messageReply = await messageModel.findMessageByID(
+      replyMessageID,
+      conversationID
+    )
+
+    console.log('messageReply', messageReply)
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: message,
+      reply: messageReply.messageContent,
+      type: 'text'
+    }
+
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+
+    const userConversation = {
+      conversationID: conversation.conversationID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    //Xu lý song song
+    await Promise.all([
+      conversationModel.updateLastMessage(userID, userConversation),
+      conversationModel.updateLastMessage(receiverId, userConversation)
+    ])
+
+    const userSocketID = getUserSocketId(userID)
+    const receiverSocketID = getReceiverSocketId(receiverId)
+
+    if (receiverSocketID && userSocketID) {
+      io.to(receiverSocketID)
+        .to(userSocketID)
+        .emit('newMessage', createNewMessage)
+      io.to(userSocketID).to(receiverSocketID).emit('notification')
+    } else {
+      io.to(userSocketID).emit('notification')
+      io.to(userSocketID).emit('newMessage', createNewMessage)
+    }
+
+    return createNewMessage
+  } catch (error) {
+    throw error
+  }
+}
+
+const addReactionToMessage = async (
+  userID,
+  receiverId,
+  messageID,
+  conversationID,
+  messageEmoji
+) => {
+  try {
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
+
+    if (!message) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        'Message not found. Cannot add reaction'
+      )
+    }
+
+    if (message.senderDelete === true) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể thêm phản ứng vào tin nhắn đã xóa'
+      )
+    }
+
+    const updatedMessage = await messageModel.addReactionToMessage(
+      messageID,
+      conversationID,
+      messageEmoji
+    )
+
+    const messageAfterReaction = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
+
+    const userSocketID = getUserSocketId(userID)
+    const receiverSocketID = getReceiverSocketId(receiverId)
+
+    if (receiverSocketID && userSocketID) {
+      io.to(receiverSocketID)
+        .to(userSocketID)
+        .emit('newMessage', updatedMessage)
+      io.to(userSocketID).to(receiverSocketID).emit('notification')
+    } else {
+      io.to(userSocketID).emit('notification')
+      io.to(userSocketID).emit('newMessage', updatedMessage)
+    }
+
+    return messageAfterReaction
+  } catch (error) {
+    throw error
+  }
+}
+const searchMessageByContent = async (conversationID, content) => {
+  try {
+    const conversation = await conversationModel.findConversationByID(
+      conversationID
+    )
+
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Conversation not found')
+    }
+
+    const messages = await messageModel.searchMessageByContent(
+      conversationID,
+      content
+    )
+
+    return messages
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   sendMessage,
   sendFiles,
   revokeMessage,
   shareMessage,
   getMessagesByConversation,
-  deleteMessage
+  deleteMessage,
+  replyMessage,
+  addReactionToMessage,
+  searchMessageByContent
 }

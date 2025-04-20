@@ -16,6 +16,8 @@ const createNewMessage = async (messageData) => {
       messageType: messageData.type,
       revoke: false,
       senderDelete: false,
+      reply: messageData.reply || null,
+      reaction: messageData.reaction || null,
       createdAt: Date.now(),
       updatedAt: Date.now()
     }
@@ -109,11 +111,59 @@ const getMessagesByConversation = async (conversationID) => {
     throw new Error(error)
   }
 }
+
+const addReactionToMessage = async (
+  messageID,
+  conversationID,
+  messageEmoji
+) => {
+  try {
+    const params = {
+      TableName: MESSAGE_TABLE_NAME,
+      Key: {
+        conversationID: conversationID,
+        messageID: messageID
+      },
+      UpdateExpression: 'set reaction = :r',
+      ExpressionAttributeValues: {
+        ':r': messageEmoji
+      },
+      ReturnValues: 'UPDATED_NEW'
+    }
+
+    await dynamoClient.update(params).promise()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const searchMessageByContent = async (conversationID, contentSearch) => {
+  try {
+    const params = {
+      TableName: MESSAGE_TABLE_NAME,
+      IndexName: 'conversationID-updatedAt-index',
+      KeyConditionExpression: 'conversationID = :c',
+      FilterExpression: 'contains(messageContent, :cs)',
+      ExpressionAttributeValues: {
+        ':c': conversationID,
+        ':cs': contentSearch
+      },
+      ScanIndexForward: false,
+      Limit: 10
+    }
+    const result = await dynamoClient.query(params).promise()
+    return result.Items
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const messageModel = {
   MESSAGE_TABLE_NAME,
   createNewMessage,
   findMessageByID,
   revokeMessage,
   getMessagesByConversation,
-  deleteMessage
+  deleteMessage,
+  addReactionToMessage,
+  searchMessageByContent
 }
