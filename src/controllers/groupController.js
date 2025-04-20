@@ -142,6 +142,27 @@ const shareMessage = async (req, res, next) => {
     next(error)
   }
 }
+
+const getMyGroups = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const result = await groupService.getMyGroups(userID)
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getAllGroups = async (req, res, next) => {
+  try {
+    const result = await groupService.getAllGroups()
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
   inviteGroup,
@@ -153,5 +174,7 @@ export const groupController = {
   sendFiles,
   revokeMessage,
   deleteMessage,
-  shareMessage
+  shareMessage,
+  getMyGroups,
+  getAllGroups
 }

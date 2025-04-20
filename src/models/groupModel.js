@@ -206,6 +206,64 @@ const revokeAdmin = async (userID, groupID) => {
     throw new Error(`revokeAdmin error: ${error.message}`)
   }
 }
+
+const getMyGroups = async (userID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      IndexName: 'userID-index',
+      KeyConditionExpression: 'userID = :userID',
+      ExpressionAttributeValues: {
+        ':userID': userID
+      }
+    }
+
+    const groupMembers = await dynamoClient.query(params).promise()
+    const groupIDs = groupMembers.Items.map((item) => item.groupID)
+
+    if (!groupIDs.length) return []
+
+    const groupParams = {
+      RequestItems: {
+        [GROUP_TABLE_NAME]: {
+          Keys: groupIDs.map((groupID) => ({ groupID }))
+        }
+      }
+    }
+
+    const groups = await dynamoClient.batchGet(groupParams).promise()
+    const groupDetails = groups.Responses[GROUP_TABLE_NAME].filter(
+      (group) => !group.destroy
+    ).map((group) => ({
+      groupID: group.groupID,
+      groupName: group.groupName,
+      groupAvatar: group.groupAvatar,
+      createdAt: group.createdAt,
+      updatedAt: group.updatedAt
+    }))
+
+    return groupDetails
+  } catch (error) {
+    throw error
+  }
+}
+
+const getAllGroups = async () => {
+  try {
+    const params = {
+      TableName: GROUP_TABLE_NAME,
+      FilterExpression: 'destroy = :destroy',
+      ExpressionAttributeValues: {
+        ':destroy': false
+      }
+    }
+
+    const result = await dynamoClient.scan(params).promise()
+    return result.Items
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const groupModel = {
   create,
   createGroupMembers,
@@ -215,5 +273,7 @@ export const groupModel = {
   leaveGroup,
   deleteGroup,
   grantAdmin,
-  revokeAdmin
+  revokeAdmin,
+  getMyGroups,
+  getAllGroups
 }

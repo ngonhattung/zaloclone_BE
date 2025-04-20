@@ -67,4 +67,18 @@ Router.post(
   authMiddleware.isAuthorized,
   groupController.shareMessage
 )
+
+Router.get(
+  // lấy danh sách nhóm của người dùng
+  '/my-groups',
+  authMiddleware.isAuthorized,
+  groupController.getMyGroups
+)
+
+Router.get(
+  // lấy tất cả các nhóm
+  '/all-groups',
+  authMiddleware.isAuthorized,
+  groupController.getAllGroups
+)
 export const groupRoutes = Router

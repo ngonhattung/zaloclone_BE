@@ -834,6 +834,29 @@ const createMessage = async (senderID, conversationID, message) => {
   return await messageModel.createNewMessage(messageData)
 }
 
+const getMyGroups = async (userID) => {
+  try {
+    const groups = await groupModel.getMyGroups(userID)
+    if (!groups || groups.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Không có nhóm nào')
+    }
+    return groups
+  } catch (error) {
+    throw error
+  }
+}
+
+const getAllGroups = async () => {
+  try {
+    const groups = await groupModel.getAllGroups()
+    if (!groups || groups.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Không có nhóm nào')
+    }
+    return groups
+  } catch (error) {
+    throw error
+  }
+}
 export const groupService = {
   createGroup,
   inviteGroup,
@@ -845,5 +868,7 @@ export const groupService = {
   sendFiles,
   revokeMessage,
   deleteMessage,
-  shareMessage
+  shareMessage,
+  getMyGroups,
+  getAllGroups
 }
