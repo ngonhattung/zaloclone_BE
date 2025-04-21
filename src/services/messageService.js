@@ -602,8 +602,9 @@ const replyMessage = async (
       conversationID: conversation.conversationID,
       senderID: userID,
       content: message,
-      reply: messageReply.messageContent,
-      type: 'text'
+      url: message.messageUrl || null,
+      type: message.messageType || 'text',
+      reply: messageReply.messageContent
     }
 
     const createNewMessage = await messageModel.createNewMessage(messageData)

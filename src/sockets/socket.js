@@ -16,36 +16,14 @@ const getReceiverSocketId = (receiverId) => {
   const sockets = userSocketMap[receiverId]
   if (!sockets) return []
 
-  let result = []
-  if (sockets.mobile) {
-    result.push(sockets.mobile)
-  }
-
-  for (const device in sockets) {
-    if (device !== 'mobile' && Array.isArray(sockets[device])) {
-      result = result.concat(sockets[device])
-    }
-  }
-
-  return result // trả về array các socketId
+  return Object.values(sockets).filter(Boolean)
 }
 
 const getUserSocketId = (userId) => {
   const sockets = userSocketMap[userId]
   if (!sockets) return []
 
-  let result = []
-  if (sockets.mobile) {
-    result.push(sockets.mobile)
-  }
-
-  for (const device in sockets) {
-    if (device !== 'mobile' && Array.isArray(sockets[device])) {
-      result = result.concat(sockets[device])
-    }
-  }
-
-  return result // trả về array các socketId
+  return Object.values(sockets).filter(Boolean)
 }
 
 io.on('connection', (socket) => {
@@ -59,17 +37,18 @@ io.on('connection', (socket) => {
     return
   }
 
-  // Nếu đăng nhập bằng mobile nhưng đã có mobile khác -> từ chối
+  // Nếu đã có thiết bị cùng loại đăng nhập => từ chối (áp dụng cả mobile và web)
   if (
-    deviceType === 'mobile' &&
     userSocketMap[userId] &&
-    userSocketMap[userId].mobile
+    ((deviceType === 'mobile' && userSocketMap[userId].mobile) ||
+      (deviceType === 'web' && userSocketMap[userId].web))
   ) {
-    console.log(`User ${userId} đã đăng nhập trên mobile khác`)
+    console.log(`User ${userId} đã đăng nhập trên thiết bị ${deviceType} khác`)
     socket.emit(
       'loginDenied',
-      'Chỉ được đăng nhập 1 điện thoại tại 1 thời điểm'
+      `Chỉ được đăng nhập 1 ${deviceType} tại 1 thời điểm`
     )
+    console.log(userSocketMap)
     socket.disconnect()
     return
   }
@@ -80,14 +59,7 @@ io.on('connection', (socket) => {
   }
 
   // Xử lý lưu socketId theo loại thiết bị
-  if (deviceType === 'mobile') {
-    userSocketMap[userId].mobile = socket.id
-  } else {
-    if (!userSocketMap[userId][deviceType]) {
-      userSocketMap[userId][deviceType] = []
-    }
-    userSocketMap[userId][deviceType].push(socket.id)
-  }
+  userSocketMap[userId][deviceType] = socket.id
 
   io.emit('getOnlineUsers', Object.keys(userSocketMap))
   console.log(userSocketMap)
@@ -100,21 +72,8 @@ io.on('connection', (socket) => {
     console.log('A user disconnected', socket.id)
 
     if (userSocketMap[userId]) {
-      if (
-        deviceType === 'mobile' &&
-        userSocketMap[userId].mobile === socket.id
-      ) {
-        delete userSocketMap[userId].mobile
-      } else if (
-        userSocketMap[userId][deviceType] &&
-        Array.isArray(userSocketMap[userId][deviceType])
-      ) {
-        userSocketMap[userId][deviceType] = userSocketMap[userId][
-          deviceType
-        ].filter((id) => id !== socket.id)
-        if (userSocketMap[userId][deviceType].length === 0) {
-          delete userSocketMap[userId][deviceType]
-        }
+      if (userSocketMap[userId][deviceType] === socket.id) {
+        delete userSocketMap[userId][deviceType]
       }
 
       // Nếu user không còn socket nào trên bất kỳ device nào thì xóa hẳn

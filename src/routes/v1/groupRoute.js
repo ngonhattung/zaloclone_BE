@@ -34,6 +34,20 @@ Router.post(
 //   groupController.revokeAdmin
 // ) // thu hồi quyền admin
 
+//cấp quyền phó nhóm
+Router.post(
+  '/admin/deputy',
+  authMiddleware.isAuthorized,
+  groupController.grantDeputy
+) // cấp quyền phó nhóm
+
+//thu hồi quyền phó nhóm
+Router.post(
+  '/admin/revoke-deputy',
+  authMiddleware.isAuthorized,
+  groupController.revokeDeputy
+) // thu hồi quyền phó nhóm
+
 Router.route('/messages/send').post(
   //gửi tin nhắn text
   authMiddleware.isAuthorized,

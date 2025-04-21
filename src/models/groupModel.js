@@ -337,6 +337,48 @@ const getMembersInGroup = async (groupID) => {
     throw error
   }
 }
+
+const grantDeputy = async (participantId, groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: { groupID, userID: participantId },
+      UpdateExpression: 'set #r = :role',
+      ExpressionAttributeNames: {
+        '#r': 'role'
+      },
+      ExpressionAttributeValues: {
+        ':role': 'deputy'
+      }
+    }
+
+    await dynamoClient.update(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+const revokeDeputy = async (participantId, groupID) => {
+  try {
+    const params = {
+      TableName: GROUP_MEMBER_TABLE_NAME,
+      Key: { groupID, userID: participantId },
+      UpdateExpression: 'set #r = :role',
+      ExpressionAttributeNames: {
+        '#r': 'role'
+      },
+      ExpressionAttributeValues: {
+        ':role': 'member'
+      }
+    }
+
+    await dynamoClient.update(params).promise()
+    return true
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 export const groupModel = {
   create,
   createGroupMembers,
@@ -350,5 +392,7 @@ export const groupModel = {
   getMyGroups,
   getAllGroups,
   getGroupInfo,
-  getMembersInGroup
+  getMembersInGroup,
+  grantDeputy,
+  revokeDeputy
 }

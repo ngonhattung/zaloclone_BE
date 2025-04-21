@@ -52,10 +52,11 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
       )
     }
 
-    members.forEach((member) => {
+    const allMembers = [...members, { userID }]
+    allMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('newConversation', conversation)
+        io.to(participantSocketId).emit('notification')
       }
     })
 
@@ -110,6 +111,7 @@ const inviteGroup = async (groupID, members) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
         io.to(participantSocketId).emit('updateGroupChat', conversation)
+        io.to(participantSocketId).emit('newMember')
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -166,13 +168,15 @@ const leaveGroup = async (userID, groupID) => {
 
     //gửi thông báo tới người rời nhóm
     const userSocketId = getUserSocketId(userID)
-    io.to(userSocketId).emit('delConversation', conversation)
+    //io.to(userSocketId).emit('delConversation', conversation)
+    io.to(userSocketId).emit('notification')
 
     // gửi thông báo cho các thành viên trong nhóm
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId && member.memberID !== userID) {
         io.to(participantSocketId).emit('updateGroupChat', conversation)
+        io.to(participantSocketId).emit('leaveMember', conversation)
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -195,14 +199,18 @@ const kickMember = async (userID, groupID, memberID) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
     }
 
-    // Kiểm tra quyền admin
+    // Kiểm tra quyền admin hay phó nhóm
     const isAdmin = groupMembers.some(
       (member) => member.userID === userID && member.role === 'admin'
     )
-    if (!isAdmin) {
+
+    const isDeputy = groupMembers.some(
+      (member) => member.userID === userID && member.role === 'deputy'
+    )
+    if (!isAdmin || !isDeputy) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
-        'Bạn không thể xóa thành viên nhóm khi không phải là admin'
+        'Bạn không thể kích thành viên khi không phải là admin hoặc phó nhóm'
       )
     }
 
@@ -222,20 +230,22 @@ const kickMember = async (userID, groupID, memberID) => {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
     }
 
-    //gửi thông báo tới người rời nhóm
-    const removeParticipantSocketId = getReceiverSocketId(memberID)
-    if (removeParticipantSocketId) {
-      io.to(removeParticipantSocketId).emit('delConversation', conversation)
+    // Gửi thông báo đến người bị kick
+    const removeSocketId = getReceiverSocketId(memberID)
+    if (removeSocketId) {
+      io.to(removeSocketId).emit('kickedFromGroup', conversation)
+      io.to(removeSocketId).emit('notification')
     }
 
-    // gửi thông báo cho các thành viên trong nhóm
-    groupMembers.forEach((member) => {
-      const participantSocketId = getReceiverSocketId(member.memberID)
-      if (participantSocketId && member.memberID !== memberID) {
-        io.to(participantSocketId).emit('updateGroupChat', conversation)
-        io.to(participantSocketId).emit('notification')
-      }
-    })
+    // Gửi thông báo đến các thành viên còn lại
+    groupMembers
+      .filter((m) => m.userID !== memberID)
+      .forEach((member) => {
+        const socketId = getReceiverSocketId(member.userID)
+        if (socketId) {
+          io.to(socketId).emit('memberKicked')
+        }
+      })
 
     return conversation
   } catch (error) {
@@ -318,11 +328,11 @@ const deleteGroup = async (userID, groupID) => {
     }
 
     // gửi thông báo cho các thành viên trong nhóm
-    groupMembers.forEach((member) => {
-      const participantSocketId = getReceiverSocketId(member.memberID)
-      if (participantSocketId && member.memberID) {
-        io.to(participantSocketId).emit('delConversation', conversation)
-        io.to(participantSocketId).emit('remove')
+    const allMembers = [...groupMembers, { userID }]
+    allMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('notification')
       }
     })
 
@@ -371,7 +381,7 @@ const grantAdmin = async (userID, participantId, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('updateGroupChat')
+        io.to(participantSocketId).emit('grantAdmin')
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -419,11 +429,13 @@ const sendMessage = async (userID, message, groupID) => {
 
     await Promise.all(updateLastMessagePromise)
 
-    // gửi thông báo cho các thành viên trong nhóm
+    // gửi tin nhắn mới cho các thành viên trong nhóm
     io.to(conversation.conversationID).emit('newMessageGroup', {
       message: createNewMessage,
       conversationID: conversation.conversationID
     })
+
+    // gửi thông báo cho các thành viên trong nhóm
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
@@ -495,11 +507,13 @@ const sendFiles = async (userID, files, groupID) => {
       )
       await Promise.all(updateLastMessagePromise)
 
-      // gửi thông báo cho các thành viên trong nhóm
+      // gửi tin nhắn mới cho các thành viên trong nhóm
       io.to(conversation.conversationID).emit('newMessageGroup', {
         message: messageResults,
         conversationID: conversation.conversationID
       })
+
+      // gửi thông báo cho các thành viên trong nhóm
       groupMembers.forEach((member) => {
         const participantSocketId = getReceiverSocketId(member.memberID)
         if (participantSocketId) {
@@ -881,6 +895,74 @@ const getMembersInGroup = async (groupID) => {
     throw error
   }
 }
+
+const grantDeputy = async (userID, participantId, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers || groupMembers.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.userID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể chỉ định quyền phó nhóm khi không phải là admin'
+      )
+    }
+
+    const result = await groupModel.grantDeputy(participantId, groupID)
+    if (!result) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Cấp quyền phó nhóm  thất bại'
+      )
+    }
+
+    return {
+      msg: 'Cấp quyền phó nhóm  thành công'
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
+const revokeDeputy = async (userID, participantId, groupID) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers || groupMembers.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    // Kiểm tra quyền admin
+    const isAdmin = groupMembers.some(
+      (member) => member.userID === userID && member.role === 'admin'
+    )
+    if (!isAdmin) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Bạn không thể thu hồi quyền phó nhóm khi không phải là admin'
+      )
+    }
+
+    const result = await groupModel.revokeDeputy(participantId, groupID)
+    if (!result) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Thu hồi quyền phó nhóm thất bại'
+      )
+    }
+
+    return {
+      msg: 'Thu hồi quyền phó nhóm thành công'
+    }
+  } catch (error) {
+    throw error
+  }
+}
 export const groupService = {
   createGroup,
   inviteGroup,
@@ -896,5 +978,7 @@ export const groupService = {
   getMyGroups,
   getAllGroups,
   getGroupInfo,
-  getMembersInGroup
+  getMembersInGroup,
+  grantDeputy,
+  revokeDeputy
 }

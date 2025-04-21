@@ -185,6 +185,38 @@ const getMembersInGroup = async (req, res, next) => {
     next(error)
   }
 }
+
+const grantDeputy = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { participantId, groupID } = req.body
+    const result = await groupService.grantDeputy(
+      userID,
+      participantId,
+      groupID
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+const revokeDeputy = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { participantId, groupID } = req.body
+    const result = await groupService.revokeDeputy(
+      userID,
+      participantId,
+      groupID
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const groupController = {
   createGroup,
   inviteGroup,
@@ -200,5 +232,7 @@ export const groupController = {
   getMyGroups,
   getAllGroups,
   getGroupInfo,
-  getMembersInGroup
+  getMembersInGroup,
+  grantDeputy,
+  revokeDeputy
 }
