@@ -602,8 +602,8 @@ const replyMessage = async (
       conversationID: conversation.conversationID,
       senderID: userID,
       content: message,
-      url: message.messageUrl || null,
-      type: message.messageType || 'text',
+      url: messageReply.messageUrl || null,
+      type: messageReply.messageType || 'text',
       reply: messageReply.messageContent
     }
 
