@@ -429,16 +429,11 @@ const sendMessage = async (userID, message, groupID) => {
 
     await Promise.all(updateLastMessagePromise)
 
-    // gửi tin nhắn mới cho các thành viên trong nhóm
-    io.to(conversation.conversationID).emit('newMessageGroup', {
-      message: createNewMessage,
-      conversationID: conversation.conversationID
-    })
-
     // gửi thông báo cho các thành viên trong nhóm
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
+        io.to(participantSocketId).emit('newMessageGroup')
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -465,18 +460,22 @@ const sendFiles = async (userID, files, groupID) => {
       )
     }
 
-    const saveMessage = async (result) => {
+    //Lưu message vào database
+    const saveMessage = async (uploadResults) => {
       try {
-        const fileParts = result.originalname.split('.')
-        const fileType =
-          fileParts.length > 1 ? fileParts[fileParts.length - 1] : 'unknown'
-
         const messageData = {
           conversationID: conversation.conversationID,
           senderID: userID,
-          content: result.originalname,
-          url: result.Location,
-          type: fileType
+          content: JSON.stringify(
+            uploadResults.map((file) => file.originalname)
+          ), // Mảng tên file
+          url: JSON.stringify(uploadResults.map((file) => file.Location)), // Mảng URL
+          type: JSON.stringify(
+            uploadResults.map((file) => {
+              const parts = file.originalname.split('.')
+              return parts.length > 1 ? parts[parts.length - 1] : 'unknown'
+            })
+          ) // Mảng loại file
         }
 
         return await messageModel.createNewMessage(messageData)
@@ -494,12 +493,12 @@ const sendFiles = async (userID, files, groupID) => {
     })
 
     const uploadResults = await Promise.all(promiseUpload)
-    const messageResults = await Promise.all(uploadResults.map(saveMessage))
+    const messageResults = await saveMessage(uploadResults)
 
     if (messageResults) {
       const userConversation = {
         conversationID: conversation.conversationID,
-        lastMessage: messageResults[messageResults.length - 1].messageID
+        lastMessage: messageResults.messageID
       }
 
       const updateLastMessagePromise = groupMembers.map((member) =>
@@ -507,16 +506,11 @@ const sendFiles = async (userID, files, groupID) => {
       )
       await Promise.all(updateLastMessagePromise)
 
-      // gửi tin nhắn mới cho các thành viên trong nhóm
-      io.to(conversation.conversationID).emit('newMessageGroup', {
-        message: messageResults,
-        conversationID: conversation.conversationID
-      })
-
       // gửi thông báo cho các thành viên trong nhóm
       groupMembers.forEach((member) => {
         const participantSocketId = getReceiverSocketId(member.memberID)
         if (participantSocketId) {
+          io.to(participantSocketId).emit('newMessageGroup')
           io.to(participantSocketId).emit('notification')
         }
       })
