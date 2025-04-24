@@ -919,6 +919,15 @@ const grantDeputy = async (userID, participantId, groupID) => {
       )
     }
 
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('grantDeputy')
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
     return {
       msg: 'Cấp quyền phó nhóm  thành công'
     }
@@ -952,6 +961,15 @@ const revokeDeputy = async (userID, participantId, groupID) => {
         'Thu hồi quyền phó nhóm thất bại'
       )
     }
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('revokeDeputy')
+        io.to(participantSocketId).emit('notification')
+      }
+    })
 
     return {
       msg: 'Thu hồi quyền phó nhóm thành công'
