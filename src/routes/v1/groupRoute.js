@@ -76,6 +76,13 @@ Router.post(
 )
 
 Router.post(
+  // trả lời tin nhắn
+  '/messages/reply',
+  authMiddleware.isAuthorized,
+  groupController.replyMessage
+)
+
+Router.post(
   //chuyển tiếp tin nhắn
   '/messages/share',
   authMiddleware.isAuthorized,

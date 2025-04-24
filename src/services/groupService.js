@@ -959,6 +959,64 @@ const revokeDeputy = async (userID, participantId, groupID) => {
     throw error
   }
 }
+
+const replyMessage = async (userID, replyMessageID, groupID, message) => {
+  try {
+    const groupMembers = await groupModel.findGroupMembersByID(groupID)
+    if (!groupMembers || groupMembers.length === 0) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Nhóm không tồn tại')
+    }
+
+    const conversation = await conversationModel.findConversationByID(groupID)
+    if (!conversation) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Cuộc trò chuyện không tồn tại')
+    } else if (conversation.conversationType !== 'group') {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        'Cuộc trò chuyện không phải là nhóm'
+      )
+    }
+
+    const messageReply = await messageModel.findMessageByID(
+      replyMessageID,
+      groupID
+    )
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: message,
+      url: messageReply.messageUrl || null,
+      type: messageReply.messageType || 'text',
+      reply: messageReply.messageID
+    }
+
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+    const userConversation = {
+      conversationID: conversation.conversationID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    const updateLastMessagePromise = groupMembers.map((member) =>
+      conversationModel.updateLastMessage(member.userID, userConversation)
+    )
+
+    await Promise.all(updateLastMessagePromise)
+
+    // gửi thông báo cho các thành viên trong nhóm
+    groupMembers.forEach((member) => {
+      const participantSocketId = getReceiverSocketId(member.memberID)
+      if (participantSocketId) {
+        io.to(participantSocketId).emit('newMessageGroup')
+        io.to(participantSocketId).emit('notification')
+      }
+    })
+
+    return messageData
+  } catch (error) {
+    throw error
+  }
+}
 export const groupService = {
   createGroup,
   inviteGroup,
@@ -976,5 +1034,6 @@ export const groupService = {
   getGroupInfo,
   getMembersInGroup,
   grantDeputy,
-  revokeDeputy
+  revokeDeputy,
+  replyMessage
 }

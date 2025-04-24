@@ -217,6 +217,22 @@ const revokeDeputy = async (req, res, next) => {
   }
 }
 
+const replyMessage = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const { replyMessageID, groupID, message } = req.body
+    const result = await groupService.replyMessage(
+      userID,
+      replyMessageID,
+      groupID,
+      message
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const groupController = {
   createGroup,
   inviteGroup,
@@ -234,5 +250,6 @@ export const groupController = {
   getGroupInfo,
   getMembersInGroup,
   grantDeputy,
-  revokeDeputy
+  revokeDeputy,
+  replyMessage
 }
