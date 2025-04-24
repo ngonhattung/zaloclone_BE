@@ -334,6 +334,7 @@ const deleteGroup = async (userID, groupID) => {
       const participantSocketId = getReceiverSocketId(member)
       if (participantSocketId) {
         io.to(participantSocketId).emit('notification')
+        io.to(participantSocketId).emit('groupDeleted', groupID)
       }
     })
 
