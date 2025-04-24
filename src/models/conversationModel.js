@@ -34,7 +34,17 @@ const haveTheyChatted = async (userID, receiverId) => {
 
     for (let [convId, convDetails] of convSetUser) {
       if (convSetReceiver.has(convId)) {
-        return { convDetails } // Trả về thông tin conversation
+        const conversationData = await findConversationByID(convId)
+        if (!conversationData) {
+          continue
+        }
+
+        if (
+          conversationData &&
+          conversationData.conversationType === 'single'
+        ) {
+          return { convDetails } // Trả về thông tin conversation
+        }
       }
     }
     return null
