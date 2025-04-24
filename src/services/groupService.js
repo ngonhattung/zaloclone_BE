@@ -207,7 +207,8 @@ const kickMember = async (userID, groupID, memberID) => {
     const isDeputy = groupMembers.some(
       (member) => member.userID === userID && member.role === 'deputy'
     )
-    if (!isAdmin || !isDeputy) {
+
+    if (!isAdmin && !isDeputy) {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
         'Bạn không thể kích thành viên khi không phải là admin hoặc phó nhóm'
