@@ -571,6 +571,7 @@ const revokeMessage = async (userID, messageID, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
+        io.to(participantSocketId).emit('revokeMessageGroup')
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -629,6 +630,7 @@ const deleteMessage = async (userID, messageID, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
+        io.to(participantSocketId).emit('deleteMessageGroup')
         io.to(participantSocketId).emit('notification')
       }
     })

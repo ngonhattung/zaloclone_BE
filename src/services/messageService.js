@@ -21,7 +21,7 @@ const sendMessage = async (userID, receiverId, message) => {
     )
     const conversation = conversationExist?.convDetails
     let msg = {}
-    if (conversation) {
+    if (conversation && conversation.conversationType === 'single') {
       /* Nếu từng nhắn rồi
       - Lưu conversationID, senderId , info vào messages
       - Update lastMessage trong user_conversation của 2 người
@@ -169,7 +169,7 @@ const sendFiles = async (userID, receiverId, files) => {
     }
 
     //Nếu đã từng nhắn tin
-    if (conversation) {
+    if (conversation && conversation.conversationType === 'single') {
       const promiseUpload = files.map(async (file) => {
         const s3Result = await S3Provider.streamUpload(file, userID)
         return {
@@ -442,7 +442,7 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
           receiverId
         )
         const conversation = conversationExist?.convDetails
-        if (conversation) {
+        if (conversation && conversation.conversationType === 'single') {
           // Đã có cuộc trò chuyện -> Gửi tin nhắn vào cuộc trò chuyện cũ
           const messageData = {
             conversationID: conversation.conversationID,
@@ -604,7 +604,7 @@ const replyMessage = async (
       content: message,
       url: messageReply.messageUrl || null,
       type: messageReply.messageType || 'text',
-      reply: messageReply.messageContent
+      reply: messageReply.messageID
     }
 
     const createNewMessage = await messageModel.createNewMessage(messageData)
