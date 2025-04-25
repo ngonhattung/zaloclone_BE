@@ -966,6 +966,17 @@ const revokeDeputy = async (userID, participantId, groupID) => {
       )
     }
 
+    const isDeputy = groupMembers.some(
+      (member) => member.userID === participantId && member.role === 'deputy'
+    )
+
+    if (!isDeputy) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Người dùng không phải là phó nhóm'
+      )
+    }
+
     const result = await groupModel.revokeDeputy(participantId, groupID)
     if (!result) {
       throw new ApiError(
