@@ -1035,7 +1035,9 @@ const replyMessage = async (userID, replyMessageID, groupID, message) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('newMessageGroup')
+        io.to(participantSocketId).emit('newMessageGroup', {
+          conversationID: groupID,
+        })
         io.to(participantSocketId).emit('notification')
       }
     })
