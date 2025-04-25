@@ -15,6 +15,23 @@ const sendMessage = async (req, res, next) => {
     next(error)
   }
 }
+
+const getMessageById = async (req, res, next) => {
+  try {
+    const { messageId, conversationID } = req.body
+    const userID = req.jwtDecoded.userID
+
+    const result = await messageService.getMessageById(
+      messageId,
+      conversationID
+    )
+
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 // const sendImages = async (req, res, next) => {
 //   try {
 //     const { receiverId } = req.params
@@ -196,5 +213,6 @@ export const messageController = {
   deleteMessage,
   replyMessage,
   addReactionToMessage,
-  searchMessageByContent
+  searchMessageByContent,
+  getMessageById
 }

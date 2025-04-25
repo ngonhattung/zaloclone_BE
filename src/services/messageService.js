@@ -715,6 +715,22 @@ const searchMessageByContent = async (conversationID, content) => {
     throw error
   }
 }
+const getMessageById = async (messageID, conversationID) => {
+  try {
+    const message = await messageModel.findMessageByID(
+      messageID,
+      conversationID
+    )
+
+    if (!message) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Message not found')
+    }
+
+    return message
+  } catch (error) {
+    throw error
+  }
+}
 export const messageService = {
   sendMessage,
   sendFiles,
@@ -724,5 +740,6 @@ export const messageService = {
   deleteMessage,
   replyMessage,
   addReactionToMessage,
-  searchMessageByContent
+  searchMessageByContent,
+  getMessageById
 }
