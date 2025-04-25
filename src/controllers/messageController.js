@@ -18,11 +18,11 @@ const sendMessage = async (req, res, next) => {
 
 const getMessageById = async (req, res, next) => {
   try {
-    const { messageId, conversationID } = req.body
+    const { messageID, conversationID } = req.params
     const userID = req.jwtDecoded.userID
 
     const result = await messageService.getMessageById(
-      messageId,
+      messageID,
       conversationID
     )
 

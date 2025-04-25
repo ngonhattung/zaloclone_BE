@@ -9,7 +9,7 @@ Router.route('/').get(authMiddleware.isAuthorized, (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'Get list messages' })
 })
 
-Router.route('/messageById').get(
+Router.route('/messageById/:messageID/:conversationID').get(
   authMiddleware.isAuthorized,
   messageController.getMessageById
 )

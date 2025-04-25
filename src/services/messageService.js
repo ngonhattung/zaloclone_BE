@@ -5,6 +5,8 @@ import { messageModel } from '~/models/messageModel'
 import { getReceiverSocketId, getUserSocketId, io } from '~/sockets/socket'
 import { S3Provider } from '~/providers/S3Provider'
 import { userModel } from '~/models/userModel'
+import axios from 'axios'
+import { env } from '~/config/environment'
 const sendMessage = async (userID, receiverId, message) => {
   try {
     if (userID === receiverId) {
@@ -20,6 +22,7 @@ const sendMessage = async (userID, receiverId, message) => {
       receiverId
     )
     const conversation = conversationExist?.convDetails
+    const isChatBot = receiverId === 'f7bdc49b-164d-4eed-81e4-a52b13446e4c'
     let msg = {}
     if (conversation) {
       /* Nếu từng nhắn rồi
@@ -59,6 +62,13 @@ const sendMessage = async (userID, receiverId, message) => {
         io.to(userSocketID).emit('newMessage', createNewMessage)
       }
 
+      if (isChatBot)
+        handleChatBotReply(
+          userID,
+          receiverId,
+          message,
+          conversation.conversationID
+        )
       msg = { conversation, createNewMessage }
     } else {
       /*Nếu chưa
@@ -118,6 +128,15 @@ const sendMessage = async (userID, receiverId, message) => {
         io.to(userSocketID).emit('newMessage', createNewMessage) // Thêm thông báo
       }
 
+      if (isChatBot)
+        handleChatBotReply(
+          userID,
+          receiverId,
+          message,
+          createConversation.conversationID,
+          createConversation
+        )
+
       msg = { createConversation, createNewMessage }
     }
 
@@ -126,7 +145,80 @@ const sendMessage = async (userID, receiverId, message) => {
     throw error
   }
 }
+const handleChatBotReply = async (
+  userID,
+  botID,
+  userMessage,
+  conversationID,
+  createConversation
+) => {
+  try {
+    const res = await axios.post(
+      `${env.CHATBOT_URL}`,
+      {
+        message: userMessage,
+        userId: userID,
+        sesstionID: userID,
+        type: 'text'
+      },
+      { headers: { 'Content-Type': 'application/json' } }
+    )
 
+    if (res.data.output === '' || res.data.output === undefined) {
+      res.data.output =
+        'Cảm ơn bạn đã liên hệ với chúng tôi. Chúng tôi sẽ phản hồi bạn trong thời gian sớm nhất!'
+    }
+    const botMessage = {
+      conversationID,
+      senderID: botID,
+      content: res.data.output,
+      type: 'text'
+    }
+
+    const createBotMessage = await messageModel.createNewMessage(botMessage)
+    const botConversation = {
+      conversationID,
+      lastMessage: createBotMessage.messageID
+    }
+
+    await Promise.all([
+      conversationModel.updateLastMessage(botID, botConversation),
+      conversationModel.updateLastMessage(userID, botConversation)
+    ])
+
+    const userSocketID = getUserSocketId(userID)
+    const receiverSocketID = getReceiverSocketId(botID)
+
+    if (createConversation) {
+      if (userSocketID && receiverSocketID) {
+        // Gửi conversation mới tới cả 2 người
+        io.to(receiverSocketID)
+          .to(userSocketID)
+          .emit('notification', createConversation) // sửa thành notification
+
+        // Gửi tin nhắn mới tới người nhận
+        io.to(receiverSocketID)
+          .to(userSocketID)
+          .emit('newMessage', createBotMessage)
+      } else {
+        // Gửi conversation mới tới người gửi
+        io.to(userSocketID).emit('notification', createConversation) // sửa thành notiification
+        io.to(userSocketID).emit('newMessage', createBotMessage) // Thêm thông báo
+      }
+    }
+    if (receiverSocketID && userSocketID) {
+      io.to(receiverSocketID)
+        .to(userSocketID)
+        .emit('newMessage', createBotMessage)
+      io.to(userSocketID).to(receiverSocketID).emit('notification')
+    } else {
+      io.to(userSocketID).emit('notification')
+      io.to(userSocketID).emit('newMessage', createBotMessage)
+    }
+  } catch (err) {
+    console.error('Chatbot response error:', err.message)
+  }
+}
 const sendFiles = async (userID, receiverId, files) => {
   try {
     if (userID === receiverId) {
