@@ -234,7 +234,10 @@ const kickMember = async (userID, groupID, memberID) => {
     // Gửi thông báo đến người bị kick
     const removeSocketId = getReceiverSocketId(memberID)
     if (removeSocketId) {
-      io.to(removeSocketId).emit('kickedFromGroup', conversation)
+      io.to(removeSocketId).emit('kickedFromGroup', {
+        ...conversation,
+        memberID
+      })
       io.to(removeSocketId).emit('notification')
     }
 
