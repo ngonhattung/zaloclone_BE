@@ -823,6 +823,7 @@ const shareWithGroups = async (userID, groupIDs, message) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
+        io.to(participantSocketId).emit('newMessageGroup')
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -951,6 +952,17 @@ const revokeDeputy = async (userID, participantId, groupID) => {
       throw new ApiError(
         StatusCodes.FORBIDDEN,
         'Bạn không thể thu hồi quyền phó nhóm khi không phải là admin'
+      )
+    }
+
+    const isDeputy = groupMembers.some(
+      (member) => member.userID === participantId && member.role === 'deputy'
+    )
+
+    if (!isDeputy) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Người dùng không phải là phó nhóm'
       )
     }
 
