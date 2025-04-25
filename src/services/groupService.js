@@ -435,7 +435,9 @@ const sendMessage = async (userID, message, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('newMessageGroup')
+        io.to(participantSocketId).emit('newMessageGroup', {
+          conversationID: groupID
+        })
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -512,7 +514,9 @@ const sendFiles = async (userID, files, groupID) => {
       groupMembers.forEach((member) => {
         const participantSocketId = getReceiverSocketId(member.memberID)
         if (participantSocketId) {
-          io.to(participantSocketId).emit('newMessageGroup')
+          io.to(participantSocketId).emit('newMessageGroup', {
+            conversationID: groupID
+          })
           io.to(participantSocketId).emit('notification')
         }
       })
@@ -573,7 +577,9 @@ const revokeMessage = async (userID, messageID, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('revokeMessageGroup')
+        io.to(participantSocketId).emit('revokeMessageGroup', {
+          conversationID: groupID
+        })
         io.to(participantSocketId).emit('notification')
       }
     })
@@ -632,7 +638,9 @@ const deleteMessage = async (userID, messageID, groupID) => {
     groupMembers.forEach((member) => {
       const participantSocketId = getReceiverSocketId(member.memberID)
       if (participantSocketId) {
-        io.to(participantSocketId).emit('deleteMessageGroup')
+        io.to(participantSocketId).emit('deleteMessageGroup', {
+          conversationID: groupID
+        })
         io.to(participantSocketId).emit('notification')
       }
     })
