@@ -1,7 +1,7 @@
 import AWS from 'aws-sdk'
 import { env } from '~/config/environment'
 
-const dynamoClient = new AWS.DynamoDB.DocumentClient({
+const s3Client = new AWS.S3({
   region: env.AWS_REGION,
   credentials: {
     accessKeyId: env.AWS_ACCESS_KEY_ID,
@@ -9,4 +9,4 @@ const dynamoClient = new AWS.DynamoDB.DocumentClient({
   }
 })
 
-export default dynamoClient
+export default s3Client
