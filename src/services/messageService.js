@@ -101,7 +101,7 @@ const sendMessage = async (userID, receiverId, message) => {
       const createNewMessage = await messageModel.createNewMessage(messageData)
 
       const userConversation = {
-        conversationID: conversation.conversationID,
+        conversationID: createConversation.conversationID,
         senderID: userID,
         lastMessage: createNewMessage.messageID
       }

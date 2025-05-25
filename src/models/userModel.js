@@ -102,6 +102,23 @@ const getUserById = async (id) => {
     throw new Error(error)
   }
 }
+const getUsersByIds = async (ids) => {
+  try {
+    const keys = ids.map((id) => ({ userID: String(id) }))
+    const params = {
+      RequestItems: {
+        [USER_TABLE_NAME]: {
+          Keys: keys,
+          ConsistentRead: true
+        }
+      }
+    }
+    const result = await dynamoClient.batchGet(params).promise()
+    return result.Responses[USER_TABLE_NAME] || []
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 const updateUser = async (id, data) => {
   try {
     const updatedData = {
@@ -207,5 +224,6 @@ export const userModel = {
   updateUser,
   deleteUser,
   findOneByPhoneNumber,
-  getAllUsers
+  getAllUsers,
+  getUsersByIds
 }

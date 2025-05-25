@@ -1,3 +1,4 @@
+import { add } from 'lodash'
 import dynamoClient from '~/config/dynamodb'
 
 import { userModel } from '~/models/userModel'
@@ -71,7 +72,7 @@ const createGroupMembers = async (userID, groupID, members) => {
   }
 }
 
-const addMembers = async (groupID, members) => {
+const addMembers = async (userID, groupID, members) => {
   try {
     const params = {
       RequestItems: {
@@ -147,6 +148,57 @@ const leaveGroup = async (userID, groupID) => {
     throw new Error(error)
   }
 }
+
+// const leaveGroup = async (userID, groupID) => {
+//   try {
+//     const params = {
+//       TableName: GROUP_MEMBER_TABLE_NAME,
+//       Key: {
+//         groupID,
+//         userID: userID
+//       },
+//       UpdateExpression: 'set #s = :status, #d = :destroy',
+//       ExpressionAttributeNames: {
+//         '#s': 'status',
+//         '#d': 'destroy'
+//       },
+//       ExpressionAttributeValues: {
+//         ':status': 'left',
+//         ':destroy': true
+//       }
+//     }
+
+//     await dynamoClient.update(params).promise()
+//     return true
+//   } catch (error) {
+//     throw new Error(error)
+//   }
+// }
+
+// const kickedFromGroup = async (userID, groupID) => {
+//   try {
+//     const params = {
+//       TableName: GROUP_MEMBER_TABLE_NAME,
+//       Key: {
+//         groupID,
+//         userID: userID
+//       },
+//       UpdateExpression: 'set #s = :status, #d = :destroy',
+//       ExpressionAttributeNames: {
+//         '#s': 'status',
+//         '#d': 'destroy'
+//       },
+//       ExpressionAttributeValues: {
+//         ':status': 'removed',
+//         ':destroy': true
+//       }
+//     }
+//     await dynamoClient.update(params).promise()
+//     return true
+//   } catch (error) {
+//     throw new Error(error)
+//   }
+// }
 
 const deleteGroup = async (groupID) => {
   try {
@@ -386,6 +438,7 @@ export const groupModel = {
   findGroupByID,
   findGroupMembersByID,
   leaveGroup,
+  // kickedFromGroup,
   deleteGroup,
   grantAdmin,
   revokeAdmin,
