@@ -57,10 +57,25 @@ const getReceiver = async (req, res, next) => {
     next(error)
   }
 }
+const updateStateSeen = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params
+    const userId = req.jwtDecoded.userID
+    const result = await conversationService.updateStateSeen(
+      conversationId,
+      userId
+    )
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 
 export const conversationController = {
   getConversations,
   getConversationByName,
   checkConversationExist,
-  getReceiver
+  getReceiver,
+  updateStateSeen
 }

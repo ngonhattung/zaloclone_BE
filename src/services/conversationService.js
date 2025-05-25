@@ -44,9 +44,22 @@ const getReceiverByConversationId = async (userID, conversationId) => {
     throw error
   }
 }
+
+const updateStateSeen = async (conversationId, userId) => {
+  try {
+    const result = await conversationModel.updateStateSeen(
+      conversationId,
+      userId
+    )
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationService = {
   getConversations,
   getConversationByName,
   checkConversationExist,
-  getReceiverByConversationId
+  getReceiverByConversationId,
+  updateStateSeen
 }

@@ -79,6 +79,7 @@ const createNewConversation = async (conversationType) => {
 }
 
 const addUserToConversation = async (userID, userConversation) => {
+  const isSender = userID === userConversation.senderID
   try {
     const params = {
       TableName: USERCONVERSATION_TABLE_NAME,
@@ -86,6 +87,7 @@ const addUserToConversation = async (userID, userConversation) => {
         userID: userID,
         conversationID: userConversation.conversationID,
         lastMessageID: userConversation.lastMessage,
+        isSeenMessage: isSender, // Nếu người dùng là người gửi thì đánh dấu là đã xem
         destroy: false,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -98,8 +100,51 @@ const addUserToConversation = async (userID, userConversation) => {
   }
 }
 
+const updateStateSeen = async (conversationID, userID) => {
+  try {
+    const params = {
+      TableName: USERCONVERSATION_TABLE_NAME,
+      Key: {
+        userID: userID,
+        conversationID: conversationID
+      },
+      UpdateExpression: 'set isSeenMessage = :isSeenMessage',
+      ExpressionAttributeValues: {
+        ':isSeenMessage': true
+      }
+    }
+    await dynamoClient.update(params).promise()
+    return { message: 'State seen updated successfully' }
+  } catch (error) {
+    throw error
+  }
+}
+
+// const updateLastMessage = async (userID, userConversation) => {
+//   try {
+//     const params = {
+//       TableName: USERCONVERSATION_TABLE_NAME,
+//       Key: {
+//         userID: userID,
+//         conversationID: userConversation.conversationID
+//       },
+//       UpdateExpression:
+//         'set lastMessageID = :lastMessage, updatedAt = :updatedAt',
+//       ExpressionAttributeValues: {
+//         ':lastMessage': userConversation.lastMessage,
+//         ':updatedAt': Date.now()
+//       }
+//     }
+//     await dynamoClient.update(params).promise()
+//     return userConversation
+//   } catch (error) {
+//     throw error
+//   }
+// }
 const updateLastMessage = async (userID, userConversation) => {
   try {
+    const isSender = userID === userConversation.senderID
+
     const params = {
       TableName: USERCONVERSATION_TABLE_NAME,
       Key: {
@@ -107,19 +152,20 @@ const updateLastMessage = async (userID, userConversation) => {
         conversationID: userConversation.conversationID
       },
       UpdateExpression:
-        'set lastMessageID = :lastMessage, updatedAt = :updatedAt',
+        'set lastMessageID = :lastMessage, updatedAt = :updatedAt, isSeenMessage = :isSeen',
       ExpressionAttributeValues: {
         ':lastMessage': userConversation.lastMessage,
-        ':updatedAt': Date.now()
+        ':updatedAt': Date.now(),
+        ':isSeen': isSender
       }
     }
+
     await dynamoClient.update(params).promise()
     return userConversation
   } catch (error) {
     throw error
   }
 }
-
 const findConversationByID = async (conversationID) => {
   try {
     const params = {
@@ -390,5 +436,6 @@ export const conversationModel = {
   createUserConversationGroup,
   leaveGroup,
   getReceiverByConversationId,
-  deleteConversation
+  deleteConversation,
+  updateStateSeen
 }

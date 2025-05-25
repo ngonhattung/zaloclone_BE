@@ -62,6 +62,7 @@ io.on('connection', (socket) => {
   userSocketMap[userId][deviceType] = socket.id
 
   io.emit('getOnlineUsers', Object.keys(userSocketMap))
+  socket.emit('loginAccepted')
   console.log(userSocketMap)
 
   socket.on('join', (conversationId) => {

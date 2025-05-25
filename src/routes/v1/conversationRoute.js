@@ -23,4 +23,8 @@ Router.route('/getReceiver/:conversationId').get(
   authMiddleware.isAuthorized,
   conversationController.getReceiver
 )
+Router.route('/updateStateSeen/:conversationId').post(
+  authMiddleware.isAuthorized,
+  conversationController.updateStateSeen
+)
 export const conversationRoutes = Router

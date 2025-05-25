@@ -40,6 +40,7 @@ const sendMessage = async (userID, receiverId, message) => {
 
       const userConversation = {
         conversationID: conversation.conversationID,
+        senderID: userID,
         lastMessage: createNewMessage.messageID
       }
 
@@ -100,7 +101,8 @@ const sendMessage = async (userID, receiverId, message) => {
       const createNewMessage = await messageModel.createNewMessage(messageData)
 
       const userConversation = {
-        conversationID: createConversation.conversationID,
+        conversationID: conversation.conversationID,
+        senderID: userID,
         lastMessage: createNewMessage.messageID
       }
       //Xử lý song song
@@ -277,6 +279,7 @@ const sendFiles = async (userID, receiverId, files) => {
         if (messageResults) {
           const userConversation = {
             conversationID: conversation.conversationID,
+            senderID: userID,
             lastMessage: messageResults.messageID
           }
 
@@ -339,6 +342,7 @@ const sendFiles = async (userID, receiverId, files) => {
         if (messageResults) {
           const userConversation = {
             conversationID: createConversation.conversationID,
+            senderID: userID,
             lastMessage: messageResults[messageResults.length - 1].messageID
           }
           //Xử lý song song
@@ -550,6 +554,7 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
 
           const userConversation = {
             conversationID: conversation.conversationID,
+            senderID: userID,
             lastMessage: createNewMessage.messageID
           }
 
@@ -599,6 +604,7 @@ const shareMessage = async (userID, receiverIds, messageID, conversationID) => {
 
           const userConversation = {
             conversationID: createConversation.conversationID,
+            senderID: userID,
             lastMessage: createNewMessage.messageID
           }
 
@@ -703,6 +709,7 @@ const replyMessage = async (
 
     const userConversation = {
       conversationID: conversation.conversationID,
+      senderID: userID,
       lastMessage: createNewMessage.messageID
     }
 
