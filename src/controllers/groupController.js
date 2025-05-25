@@ -23,8 +23,9 @@ const createGroup = async (req, res, next) => {
 }
 const inviteGroup = async (req, res, next) => {
   try {
+    const userID = req.jwtDecoded.userID
     const { groupID, members } = req.body // mảng id của các thành viên trong nhóm
-    const result = await groupService.inviteGroup(groupID, members)
+    const result = await groupService.inviteGroup(userID, groupID, members)
 
     //Có kết quả trả về client
     res.status(StatusCodes.OK).json(result)

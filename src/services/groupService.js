@@ -66,7 +66,7 @@ const createGroup = async (userID, groupName, groupAvatar, members) => {
   }
 }
 
-const inviteGroup = async (groupID, members) => {
+const inviteGroup = async (userID, groupID, members) => {
   try {
     const groupMembers = await groupModel.findGroupMembersByID(groupID)
     if (!groupMembers || groupMembers.length === 0) {
@@ -89,14 +89,37 @@ const inviteGroup = async (groupID, members) => {
         'Thêm thành viên thất bại vào cuộc trò chuyện'
       )
     }
-
-    const result = await groupModel.addMembers(groupID, members)
+    const result = await groupModel.addMembers(userID, groupID, members)
     if (!result) {
       throw new ApiError(
         StatusCodes.INTERNAL_SERVER_ERROR,
         'Thêm thành viên thất bại'
       )
     }
+
+    // Cập nhật cuộc trò chuyện với các thành viên mới
+    const inviter = await userModel.getUserById(userID)
+    const invitedUsers = await userModel.getUsersByIds(members)
+    const memberNames = invitedUsers.map((user) => user.fullName).join(', ')
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: `${memberNames} đã được ${inviter.fullName} mời vào nhóm`,
+      type: 'system'
+    }
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+    const userConversationMess = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    const updateLastMessagePromise = groupMembers.map((member) =>
+      conversationModel.updateLastMessage(member.userID, userConversationMess)
+    )
+
+    await Promise.all(updateLastMessagePromise)
 
     //gửi conversation mới cho các thành viên mới tham gia nhóm
     members.forEach((member) => {
@@ -166,6 +189,28 @@ const leaveGroup = async (userID, groupID) => {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
     }
 
+    // Cập nhật cuộc trò chuyện với các thành viên mới
+    const invitedUser = await userModel.getUserById(userID)
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: `${invitedUser.fullName} đã rời khỏi nhóm`,
+      type: 'system'
+    }
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+    const userConversationMess = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    const updateLastMessagePromise = groupMembers.map((member) =>
+      conversationModel.updateLastMessage(member.userID, userConversationMess)
+    )
+
+    await Promise.all(updateLastMessagePromise)
+
     //gửi thông báo tới người rời nhóm
     const userSocketId = getUserSocketId(userID)
     //io.to(userSocketId).emit('delConversation', conversation)
@@ -227,9 +272,33 @@ const kickMember = async (userID, groupID, memberID) => {
     }
 
     const result = await groupModel.leaveGroup(memberID, groupID)
+    // const result = await groupModel.kickedFromGroup(memberID, groupID)
     if (!result) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Rời nhóm thất bại')
     }
+
+    // Cập nhật cuộc trò chuyện với các thành viên mới
+    const userKicked = await userModel.getUserById(userID)
+    const kickedUser = await userModel.getUserById(memberID)
+
+    const messageData = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      content: `${kickedUser.fullName} đã bị ${userKicked.fullName} đá khỏi nhóm`,
+      type: 'system'
+    }
+    const createNewMessage = await messageModel.createNewMessage(messageData)
+    const userConversationMess = {
+      conversationID: conversation.conversationID,
+      senderID: userID,
+      lastMessage: createNewMessage.messageID
+    }
+
+    const updateLastMessagePromise = groupMembers.map((member) =>
+      conversationModel.updateLastMessage(member.userID, userConversationMess)
+    )
+
+    await Promise.all(updateLastMessagePromise)
 
     // Gửi thông báo đến người bị kick
     const removeSocketId = getReceiverSocketId(memberID)
