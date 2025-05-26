@@ -24,7 +24,16 @@ app.use('/api/v1', APIs_V1)
 // Middleware xử lý lỗi tập trung trong ứng dụng Back-end NodeJS (ExpressJS)
 app.use(errorHandlingMiddleware)
 
-server.listen(env.APP_PORT, env.APP_HOST, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server running at http://${env.APP_HOST}:${env.APP_PORT}/`)
-})
+//Chay server trong môi trường production
+if (env.BUILD_MODE === 'production') {
+  server.listen(process.env.PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server running at port ${process.env.PORT}`)
+  })
+} else {
+  // Chạy server trong môi trường phát triển
+  server.listen(env.APP_PORT, env.APP_HOST, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server running at http://${env.APP_HOST}:${env.APP_PORT}/`)
+  })
+}
