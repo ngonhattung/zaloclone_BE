@@ -102,6 +102,20 @@ io.on('connection', (socket) => {
     })
   })
 
+  // Khi một trong hai bên kết thúc cuộc gọi
+  socket.on('end-call', ({ targetUserId }) => {
+    const targetSocketIds = getReceiverSocketId(targetUserId)
+
+    targetSocketIds.forEach((socketId) => {
+      io.to(socketId).emit('call-ended', {
+        from: userId
+      })
+    })
+
+    // Có thể log lại hoặc broadcast cho admin/monitor nếu cần
+    console.log(`User ${userId} kết thúc cuộc gọi với ${targetUserId}`)
+  })
+
   socket.on('disconnect', () => {
     console.log('A user disconnected', socket.id)
 
