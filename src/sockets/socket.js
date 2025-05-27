@@ -69,6 +69,39 @@ io.on('connection', (socket) => {
     socket.join(conversationId)
   })
 
+  // User A gọi cho user B
+  socket.on('call-user', ({ targetUserId, offer }) => {
+    const targetSocketIds = getReceiverSocketId(targetUserId)
+    targetSocketIds.forEach((socketId) => {
+      io.to(socketId).emit('incoming-call', {
+        from: userId,
+        offer
+      })
+    })
+  })
+
+  // User B trả lời cuộc gọi
+  socket.on('answer-call', ({ targetUserId, answer }) => {
+    const targetSocketIds = getReceiverSocketId(targetUserId)
+    targetSocketIds.forEach((socketId) => {
+      io.to(socketId).emit('call-answered', {
+        from: userId,
+        answer
+      })
+    })
+  })
+
+  // Trao đổi ICE Candidate
+  socket.on('ice-candidate', ({ targetUserId, candidate }) => {
+    const targetSocketIds = getReceiverSocketId(targetUserId)
+    targetSocketIds.forEach((socketId) => {
+      io.to(socketId).emit('ice-candidate', {
+        from: userId,
+        candidate
+      })
+    })
+  })
+
   socket.on('disconnect', () => {
     console.log('A user disconnected', socket.id)
 
