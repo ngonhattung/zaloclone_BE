@@ -9,6 +9,11 @@ Router.route('/').get(
   conversationController.getConversations
 )
 
+Router.route('/conversationNoSeen').get(
+  authMiddleware.isAuthorized,
+  conversationController.getConversationsNoSeen
+)
+
 Router.route('/:conversationName').get(
   authMiddleware.isAuthorized,
   conversationController.getConversationByName

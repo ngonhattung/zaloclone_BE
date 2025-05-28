@@ -71,11 +71,21 @@ const updateStateSeen = async (req, res, next) => {
     next(error)
   }
 }
-
+const getConversationsNoSeen = async (req, res, next) => {
+  try {
+    const userID = req.jwtDecoded.userID
+    const result = await conversationService.getConversationsNoSeen(userID)
+    //Có kết quả trả về client
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
 export const conversationController = {
   getConversations,
   getConversationByName,
   checkConversationExist,
   getReceiver,
-  updateStateSeen
+  updateStateSeen,
+  getConversationsNoSeen
 }

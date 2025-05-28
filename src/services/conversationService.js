@@ -56,10 +56,22 @@ const updateStateSeen = async (conversationId, userId) => {
     throw error
   }
 }
+const getConversationsNoSeen = async (userID) => {
+  try {
+    const result = await conversationModel.getConversationsNoSeen(userID)
+    if (!result) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+    }
+    return result
+  } catch (error) {
+    throw error
+  }
+}
 export const conversationService = {
   getConversations,
   getConversationByName,
   checkConversationExist,
   getReceiverByConversationId,
-  updateStateSeen
+  updateStateSeen,
+  getConversationsNoSeen
 }
